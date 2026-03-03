@@ -264,8 +264,27 @@ class Agent(ABC):
             infos.update(subordinate.get_info(proxy))
         return infos
     
+    def get_action_mask(self) -> Optional[np.ndarray]:
+        """Return action mask for this agent, or ``None`` if no masking.
+
+        Override in subclasses to constrain valid actions based on current state.
+
+        For ``Discrete(n)``: return boolean array of shape ``(n,)``
+            (``True`` = action allowed).
+        For ``MultiDiscrete([n1, n2, ...])``: return concatenated boolean arrays.
+        For ``Box`` (continuous): return ``None`` (continuous actions don't use masks).
+
+        Returns:
+            ``np.ndarray`` mask or ``None``
+        """
+        return None
+
     def get_local_info(self, local_state: dict) -> Dict[AgentID, Any]:
-        return {}
+        info: Dict[str, Any] = {}
+        mask = self.get_action_mask()
+        if mask is not None:
+            info["action_mask"] = mask
+        return info
     
     # ============================================
     # terminateds related functions
@@ -328,6 +347,18 @@ class Agent(ABC):
     # ============================================
     # Action taking related functions
     # ============================================
+    def is_active_at(self, step: int) -> bool:
+        """Whether this agent should apply its action at the given env step.
+
+        Each env step = 1 second.  An agent with ``tick_interval=3.0`` acts
+        every 3 steps.  Agents with ``tick_interval <= 1.0`` act every step.
+
+        Args:
+            step: 1-indexed env step number.
+        """
+        period = max(1, round(self._tick_config.tick_interval))
+        return step % period == 0
+
     def act(self, actions: Dict[str, Any], proxy: Optional["ProxyAgent"] = None) -> None:
         self._timestep += 1
 
@@ -362,21 +393,28 @@ class Agent(ABC):
         }
 
     def handle_self_action(self, action: Any, proxy: Optional["ProxyAgent"] = None):
-        if action is not None:
-            self.set_action(action)
-        elif self.policy:
-            local_obs = proxy.get_observation(self.agent_id)
-            self.set_action(self.policy.forward(observation=local_obs)) # This is where policy is needed!
+        """Handle this agent's own action.
 
-        else:
-            # Only warn for field agents (level 1) - higher-level agents don't need policies in CTDE
-            if self.level == 1:
-                logging.debug(f"No action built for ({self}) because there's no upstream action and no action policy")
+        If the agent is inactive at the current timestep (determined by
+        ``is_active_at``), ``set_action`` and ``apply_action`` are skipped.
+        The agent's state is still synced to the proxy so that simulation
+        results remain visible.
+        """
+        if self.is_active_at(int(self._timestep)):
+            if action is not None:
+                self.set_action(action)
+            elif self.policy:
+                local_obs = proxy.get_observation(self.agent_id)
+                self.set_action(self.policy.forward(observation=local_obs))
+            else:
+                if self.level == 1:
+                    logging.debug(f"No action built for ({self}) because there's no upstream action and no action policy")
 
-        self.apply_action()
+            self.apply_action()
+
         if not self.state:
             raise ValueError("We cannot find appropriate agent state, double check your state update logic")
-        proxy.set_local_state(self.agent_id, self.state)  # Pass State object directly
+        proxy.set_local_state(self.agent_id, self.state)
 
     def handle_subordinate_actions(self, actions: Dict[AgentID, Any], proxy: Optional["ProxyAgent"] = None):
         # Use protocol to produce subordinate actions (mirrors event-driven coordinate()).

@@ -199,10 +199,23 @@ class RLlibBasedHeronEnv(MultiAgentEnv):
             self.heron_env.step(action_dict)
         )
 
+        # --- activity-aware filtering (agents self-check via is_active_at) ---
+        agents = self.heron_env.registered_agents
+        step = self._step_count
+
+        active_now = {
+            aid for aid in self._agent_ids
+            if aid in agents and agents[aid].is_active_at(step)
+        }
+        active_next = {
+            aid for aid in self._agent_ids
+            if aid in agents and agents[aid].is_active_at(step + 1)
+        }
+        all_flags = {aid: aid in active_now for aid in self._agent_ids}
+
         obs = {
             aid: np.asarray(raw_obs[aid], dtype=np.float32)
-            for aid in self._agent_ids
-            if aid in raw_obs
+            for aid in active_next if aid in raw_obs
         }
         rew = {aid: float(raw_rew.get(aid, 0.0)) for aid in self._agent_ids}
 
@@ -214,5 +227,7 @@ class RLlibBasedHeronEnv(MultiAgentEnv):
         trunc["__all__"] = hit_limit
 
         info = {aid: raw_info.get(aid, {}) for aid in self._agent_ids}
+        for aid in info:
+            info[aid]["is_active"] = all_flags
 
         return obs, rew, term, trunc, info
