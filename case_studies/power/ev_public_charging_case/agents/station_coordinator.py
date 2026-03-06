@@ -17,7 +17,7 @@ from heron.protocols.vertical import BroadcastActionProtocol, VerticalProtocol
 from heron.scheduling.tick_config import TickConfig
 from heron.utils.typing import AgentID
 
-from case_studies.power.ev_public_charging_case.features import ChargingStationFeature, MarketFeature
+from case_studies.power.ev_public_charging_case.features import ChargingStationFeature, MarketFeature, RegulationFeature
 from .charging_slot import ChargingSlot
 
 
@@ -49,6 +49,7 @@ class StationCoordinator(CoordinatorAgent):
         default_features = [
             ChargingStationFeature(max_chargers=len(subordinates), open_chargers=len(subordinates)),
             MarketFeature(),
+            RegulationFeature()
         ]
         all_features = (features or []) + default_features
 
@@ -65,8 +66,8 @@ class StationCoordinator(CoordinatorAgent):
             ),
         )
 
-        # Observation: ChargingStationFeature(2) + MarketFeature(3) = 5
-        self.observation_space = Box(-np.inf, np.inf, (5,), np.float32)
+        # Observation: ChargingStationFeature(2) + MarketFeature(3) + RegulationFeature(3) = 8
+        self.observation_space = Box(-np.inf, np.inf, (8,), np.float32)
         # Action: pricing in [0, 0.8] $/kWh
         self.action_space = Box(0.0, 0.8, (1,), np.float32)
 

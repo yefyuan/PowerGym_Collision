@@ -32,3 +32,7 @@ class EnvState:
     time_s: float = 0.0
     dt: float = 300.0
     new_arrivals: int = 0
+    # frequency regulation info
+    reg_signal: float = 0.0
+    station_power: Dict[str, float] = field(default_factory=dict)
+    station_capacity: Dict[str, float] = field(default_factory=dict)
