@@ -1,6 +1,6 @@
 """State abstractions for agent state management.
 
-This module provides generic state containers that compose FeatureProviders
+This module provides generic state containers that compose Features
 and support visibility-based observation filtering.
 """
 
@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.utils.array_utils import cat_f32
 
 
@@ -20,7 +20,7 @@ class State(ABC):
     owner_level: int
 
     # Features stored as dict for O(1) lookup by name
-    features: Dict[str, FeatureProvider] = field(default_factory=dict)
+    features: Dict[str, Feature] = field(default_factory=dict)
 
     def vector(self) -> np.ndarray:
         """Concatenate all feature vectors into an array."""

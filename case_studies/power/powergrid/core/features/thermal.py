@@ -3,13 +3,13 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.utils.array_utils import as_f32
 from powergrid.utils.phase import PhaseModel, PhaseSpec
 
 
 @dataclass(slots=True)
-class ThermalLoading(FeatureProvider):
+class ThermalLoading(Feature):
     """
     Thermal loading as percent of rating.
 

@@ -40,7 +40,7 @@ from powergrid.core.features.metrics import CostSafetyMetrics
 # Grid Agents
 from powergrid.agents.power_grid_agent import PowerGridAgent
 from powergrid.agents.grid_system_agent import GridSystemAgent
-from heron.agents.proxy_agent import ProxyAgent, PROXY_LEVEL
+from heron.agents.proxy_agent import Proxy, PROXY_LEVEL
 from powergrid.agents import POWER_FLOW_CHANNEL_TYPE
 
 # Environments
@@ -71,7 +71,7 @@ __all__ = [
     # Grid Agents
     "PowerGridAgent",
     "GridSystemAgent",
-    "ProxyAgent",
+    "Proxy",
     "PROXY_LEVEL",
     "POWER_FLOW_CHANNEL_TYPE",
     # Environments

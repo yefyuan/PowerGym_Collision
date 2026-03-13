@@ -11,14 +11,14 @@ from heron.core.action import Action
 from heron.core.policies import Policy
 from heron.messaging import MessageBroker, ChannelManager, Message, MessageType
 from heron.utils.typing import AgentID, MultiAgentDict
-from heron.scheduling import EventScheduler, DefaultScheduler, Event, EventAnalyzer, EpisodeResult
-from heron.scheduling.tick_config import TickConfig
+from heron.scheduling import EventScheduler, Event, EpisodeAnalyzer, EpisodeStats
+from heron.scheduling.tick_config import ScheduleConfig
 from heron.agents.system_agent import SystemAgent
-from heron.agents.proxy_agent import ProxyAgent
+from heron.agents.proxy_agent import Proxy
 from heron.agents.constants import SYSTEM_AGENT_ID, PROXY_AGENT_ID
 
 
-class EnvCore:
+class BaseEnv:
     def __init__(
         self,
         env_id: Optional[str] = None,
@@ -30,7 +30,7 @@ class EnvCore:
         # simulation-related params
         simulation_wait_interval: Optional[float] = None,
         # timing
-        system_agent_tick_config: Optional[TickConfig] = None,
+        system_agent_schedule_config: Optional[ScheduleConfig] = None,
     ) -> None:
         # environment attributes
         self.env_id = env_id or f"env_{uuid.uuid4().hex[:8]}"
@@ -38,20 +38,20 @@ class EnvCore:
 
         # agent-specific fields
         self.registered_agents: Dict[AgentID, Agent] = {}
-        self._register_agents(system_agent, coordinator_agents, system_agent_tick_config)
+        self._register_agents(system_agent, coordinator_agents, system_agent_schedule_config)
 
         # initialize proxy agent (singleton) for state access and action dispatch
-        self.proxy_agent = ProxyAgent(agent_id=PROXY_AGENT_ID)
-        self._register_agent(self.proxy_agent)
+        self.proxy = Proxy(agent_id=PROXY_AGENT_ID)
+        self._register_agent(self.proxy)
 
         # setup message broker (before proxy attach - proxy needs it for channels)
         self.message_broker = MessageBroker.init(message_broker_config)
         self.message_broker.attach(self.registered_agents)
 
         # attach message broker to proxy agent for communication
-        self.proxy_agent.set_message_broker(self.message_broker)
+        self.proxy.set_message_broker(self.message_broker)
         # establish direction link between registered agents and proxy for state access
-        self.proxy_agent.attach(self.registered_agents)
+        self.proxy.attach(self.registered_agents)
 
         # setup scheduler (before initialization - agents need it)
         self.scheduler = EventScheduler.init(scheduler_config)
@@ -64,7 +64,7 @@ class EnvCore:
         self,
         system_agent: Optional[SystemAgent],
         coordinator_agents: Optional[List[CoordinatorAgent]],
-        system_agent_tick_config: Optional[TickConfig] = None,
+        system_agent_schedule_config: Optional[ScheduleConfig] = None,
     ) -> None:
         """Internal method to register agents during initialization."""
         # register system agent (singleton) & its subordinates
@@ -79,8 +79,8 @@ class EnvCore:
                 "agent_id": SYSTEM_AGENT_ID,
                 "subordinates": {agent.agent_id: agent for agent in coordinator_agents},
             }
-            if system_agent_tick_config is not None:
-                sys_kwargs["tick_config"] = system_agent_tick_config
+            if system_agent_schedule_config is not None:
+                sys_kwargs["schedule_config"] = system_agent_schedule_config
             self._system_agent = SystemAgent(**sys_kwargs)
         self._system_agent.set_simulation(
             self.run_simulation,
@@ -131,7 +131,7 @@ class EnvCore:
             jitter_seed: If provided, enables jitter on all agents with
                 this seed (for reproducible event-driven evaluation).
                 Tick configs should be set at agent construction time
-                (e.g. via ``tick_config`` in env_config).
+                (e.g. via ``schedule_config`` in env_config).
             **kwargs: Additional reset parameters
         """
         # Re-seed jitter RNG per episode for reproducible event-driven eval
@@ -140,15 +140,15 @@ class EnvCore:
                 agent.enable_jitter(seed=jitter_seed)
 
         # Sync tick configs in case agents were reconfigured after construction
-        self.scheduler.sync_tick_configs(self.registered_agents)
+        self.scheduler.sync_schedule_configs(self.registered_agents)
         # reset scheduler and clear messages before resetting agents to ensure a clean slate
         self.scheduler.reset(start_time=0.0)  # Always reset to time 0
         self.clear_broker_environment()
 
         # reset agents (system agent will reset subordinates)
-        self.proxy_agent.reset(seed=seed)
-        obs = self._system_agent.reset(seed=seed, proxy=self.proxy_agent)
-        self.proxy_agent.init_global_state()  # Cache initial state in proxy after reset
+        self.proxy.reset(seed=seed)
+        obs = self._system_agent.reset(seed=seed, proxy=self.proxy)
+        self.proxy.init_global_state()  # Cache initial state in proxy after reset
         return obs
     
     def step(self, actions: Dict[AgentID, Any]) -> Tuple[
@@ -174,28 +174,28 @@ class EnvCore:
             - truncated: Dict with agent IDs and "__all__" key
             - infos: Dict mapping agent IDs to info dicts
         """
-        self._system_agent.execute(actions, self.proxy_agent)
-        return self.proxy_agent.get_step_results()
+        self._system_agent.execute(actions, self.proxy)
+        return self.proxy.get_step_results()
     
     def run_event_driven(
         self,
-        event_analyzer: EventAnalyzer,
+        episode_analyzer: EpisodeAnalyzer,
         t_end: float,
         max_events: Optional[int] = None,
-    ) -> EpisodeResult:
+    ) -> EpisodeStats:
         """Run event-driven simulation until time limit.
 
         Args:
-            event_analyzer: EventAnalyzer to parse events during simulation
+            episode_analyzer: EpisodeAnalyzer to parse events during simulation
             t_end: Stop when simulation time exceeds this
             max_events: Optional maximum number of events to process
 
         Returns:
-            EpisodeResult containing all event analyses from the simulation
+            EpisodeStats containing all event analyses from the simulation
         """
-        result = EpisodeResult()
+        result = EpisodeStats()
         for event in self.scheduler.run_until(t_end=t_end, max_events=max_events):
-            result.add_event_analysis(event_analyzer.parse_event(event))
+            result.add_event_analysis(episode_analyzer.parse_event(event))
         return result
 
     # ============================================
@@ -302,7 +302,7 @@ class EnvCore:
             self.message_broker.close()
     
 
-class HeronEnv(EnvCore):
+class HeronEnv(BaseEnv):
     def close(self) -> None:
         """Clean up environment resources."""
         self.close_core()

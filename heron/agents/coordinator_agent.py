@@ -4,15 +4,15 @@ from typing import Any, Dict, List, Optional
 
 from heron.agents.base import Agent
 from heron.agents.field_agent import FieldAgent
-from heron.agents.proxy_agent import ProxyAgent
+from heron.agents.proxy_agent import Proxy
 from heron.core.action import Action
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.observation import Observation
 from heron.core.state import CoordinatorAgentState, State
 from heron.core.policies import Policy
 from heron.utils.typing import AgentID
 from heron.protocols.base import Protocol
-from heron.scheduling.tick_config import DEFAULT_COORDINATOR_AGENT_TICK_CONFIG, TickConfig
+from heron.scheduling.tick_config import DEFAULT_COORDINATOR_AGENT_SCHEDULE_CONFIG, ScheduleConfig
 from heron.scheduling.scheduler import EventScheduler, Event
 from heron.agents.constants import (
     COORDINATOR_LEVEL,
@@ -31,13 +31,13 @@ class CoordinatorAgent(Agent):
     def __init__(
         self,
         agent_id: Optional[AgentID] = None,
-        features: Optional[List[FeatureProvider]] = None,
+        features: Optional[List[Feature]] = None,
         # hierarchy params
         upstream_id: Optional[AgentID] = None,
         subordinates: Optional[Dict[AgentID, "Agent"]] = None,
         env_id: Optional[str] = None,
         # timing config (for event-driven scheduling)
-        tick_config: Optional[TickConfig] = None,
+        schedule_config: Optional[ScheduleConfig] = None,
         # execution params
         policy: Optional[Policy] = None,
         # coordination params
@@ -51,12 +51,12 @@ class CoordinatorAgent(Agent):
             upstream_id=upstream_id,
             subordinates=subordinates,
             env_id=env_id,
-            tick_config=tick_config or DEFAULT_COORDINATOR_AGENT_TICK_CONFIG,
+            schedule_config=schedule_config or DEFAULT_COORDINATOR_AGENT_SCHEDULE_CONFIG,
             policy=policy,
             protocol=protocol,
         )
 
-    def init_state(self, features: List[FeatureProvider] = []) -> State:
+    def init_state(self, features: List[Feature] = []) -> State:
         """Initialize a CoordinatorAgentState from the provided features."""
         return CoordinatorAgentState(
             owner_id=self.agent_id,
@@ -64,7 +64,7 @@ class CoordinatorAgent(Agent):
             features={f.feature_name: f for f in features}
         )
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         """Initialize an empty Action (coordinators delegate actions to subordinates)."""
         return Action()
 
@@ -105,7 +105,7 @@ class CoordinatorAgent(Agent):
             sender_id=self.agent_id,
             recipient_id=PROXY_AGENT_ID,
             message={MSG_GET_INFO: INFO_TYPE_OBS, MSG_KEY_PROTOCOL: self.protocol},
-            delay=self._tick_config.msg_delay,
+            delay=self._schedule_config.msg_delay,
         )
 
     # ============================================
@@ -180,7 +180,7 @@ class CoordinatorAgent(Agent):
                 sender_id=self.agent_id,
                 recipient_id=PROXY_AGENT_ID,
                 message={MSG_GET_INFO: INFO_TYPE_LOCAL_STATE, MSG_KEY_PROTOCOL: self.protocol},
-                delay=self._tick_config.reward_delay,
+                delay=self._schedule_config.reward_delay,
             )
         else:
             raise NotImplementedError

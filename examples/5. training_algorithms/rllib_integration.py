@@ -31,7 +31,7 @@ import numpy as np
 from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.agents.field_agent import FieldAgent
 from heron.core.action import Action
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 
 
 # ---------------------------------------------------------------------------
@@ -39,7 +39,7 @@ from heron.core.feature import FeatureProvider
 # ---------------------------------------------------------------------------
 
 @dataclass(slots=True)
-class RoomTempFeature(FeatureProvider):
+class RoomTempFeature(Feature):
     """Room temperature (public so coordinator can observe it)."""
     visibility: ClassVar[Sequence[str]] = ["public"]
     temp: float = 20.0
@@ -49,7 +49,7 @@ class RoomTempFeature(FeatureProvider):
 class Thermostat(FieldAgent):
     """Thermostat that adjusts heating power."""
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         action = Action()
         action.set_specs(dim_c=1, range=(np.array([-1.0]), np.array([1.0])))
         return action
@@ -255,7 +255,7 @@ def demo_runner_config():
     )
 
   During evaluation, the runner:
-  1. Creates a fresh HERON env with TickConfig timing
+  1. Creates a fresh HERON env with ScheduleConfig timing
   2. Bridges trained RLModules -> HERON policies (RLlibModuleBridge)
   3. Runs heron_env.run_event_driven(analyzer, t_end=...)
   4. Returns MultiAgentEpisode with reward trajectories
@@ -388,10 +388,10 @@ def main():
   Dual-mode execution:
 
     Training:   step-based (PPO/MAPPO via RLlib)
-    Evaluation: event-driven (HERON scheduler + TickConfig)
+    Evaluation: event-driven (HERON scheduler + ScheduleConfig)
 
   See examples/1. starter/ for full production examples
-  with TickConfig, jitter, and event-driven evaluation.
+  with ScheduleConfig, jitter, and event-driven evaluation.
 """)
     print("Done.")
 

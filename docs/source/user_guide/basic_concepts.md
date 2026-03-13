@@ -34,10 +34,10 @@ system_agent = SystemAgent(
 Features use string-based visibility tags to control information sharing:
 
 ```python
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 import numpy as np
 
-class TemperatureFeature(FeatureProvider):
+class TemperatureFeature(Feature):
     def __init__(self, value: float = 20.0):
         super().__init__(visibility=["owner", "coordinator"])
         self.value = value

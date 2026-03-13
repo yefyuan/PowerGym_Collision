@@ -4,11 +4,11 @@ import numpy as np
 from dataclasses import dataclass
 from typing import ClassVar, Sequence
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 
 
 @dataclass(slots=True)
-class MarketFeature(FeatureProvider):
+class MarketFeature(Feature):
     visibility: ClassVar[Sequence[str]] = ['owner', 'upper_level', 'system']
     lmp: float = 0.20
     t_day_s: float = 0.0

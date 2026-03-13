@@ -221,8 +221,8 @@ class HierarchicalMicrogridEnv(HeronEnv):
                     self._current_profiles[f"{area_key}_{area_name}"] = float(values[hour])
 
         # Push profiles to proxy for agents to access via global state
-        if self.proxy_agent is not None:
-            self.proxy_agent.set_global_state({"env_context": self._current_profiles})
+        if self.proxy is not None:
+            self.proxy.set_global_state({"env_context": self._current_profiles})
 
     def pre_step(self) -> None:
         """Update profiles at the start of each step.
@@ -362,7 +362,7 @@ class HierarchicalMicrogridEnv(HeronEnv):
         power_flow_results = env_state.power_flow_results
 
         # Get serialized agent states (for message passing, not observations)
-        agent_states = self.proxy_agent.get_serialized_agent_states()
+        agent_states = self.proxy.get_serialized_agent_states()
 
         # Update microgrid coordinator features with power flow results
         for agent_id, agent_state in agent_states.items():
@@ -411,7 +411,7 @@ class HierarchicalMicrogridEnv(HeronEnv):
 
         # Create network on first reset
         if self.net is None:
-            global_state = self.proxy_agent.get_global_states(
+            global_state = self.proxy.get_global_states(
                 sender_id=SYSTEM_AGENT_ID, protocol=None
             )
             self.net = self._create_network_from_agents(global_state)

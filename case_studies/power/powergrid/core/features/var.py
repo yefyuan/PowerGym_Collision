@@ -3,13 +3,13 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.utils.array_utils import as_f32, cat_f32
 from powergrid.utils.phase import PhaseModel, PhaseSpec
 
 
 @dataclass(slots=True)
-class ShuntCapacitorBlock(FeatureProvider):
+class ShuntCapacitorBlock(Feature):
     """
     Shunt capacitor bank (fixed or staged).
 
@@ -436,7 +436,7 @@ class ShuntCapacitorBlock(FeatureProvider):
 
 
 @dataclass(slots=True)
-class VoltVarCurve(FeatureProvider):
+class VoltVarCurve(Feature):
     """
     Volt/VAR droop, exported as features.
 

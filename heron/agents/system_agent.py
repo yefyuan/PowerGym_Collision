@@ -4,16 +4,16 @@ from enum import Enum
 
 from heron.agents.base import Agent
 from heron.agents.coordinator_agent import CoordinatorAgent
-from heron.agents.proxy_agent import ProxyAgent
+from heron.agents.proxy_agent import Proxy
 from heron.core.action import Action
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.observation import Observation
 from heron.core.state import State, SystemAgentState
 from heron.utils.typing import AgentID, MultiAgentDict
 from heron.core.policies import Policy
 from heron.protocols.base import Protocol
 from heron.scheduling.scheduler import Event, EventScheduler
-from heron.scheduling.tick_config import DEFAULT_SYSTEM_AGENT_TICK_CONFIG, TickConfig
+from heron.scheduling.tick_config import DEFAULT_SYSTEM_AGENT_SCHEDULE_CONFIG, ScheduleConfig
 from gymnasium.spaces import Box, Space
 from heron.agents.constants import (
     SYSTEM_LEVEL,
@@ -36,12 +36,12 @@ class SystemAgent(Agent):
     def __init__(
         self,
         agent_id: Optional[AgentID] = None,
-        features: Optional[List[FeatureProvider]] = None,
+        features: Optional[List[Feature]] = None,
         # hierarchy params
         subordinates: Optional[Dict[AgentID, "Agent"]] = None,
         env_id: Optional[str] = None,
         # timing config (for event-driven scheduling)
-        tick_config: Optional[TickConfig] = None,
+        schedule_config: Optional[ScheduleConfig] = None,
         # execution params
         policy: Optional[Policy] = None,
         # coordination params
@@ -54,12 +54,12 @@ class SystemAgent(Agent):
             subordinates=subordinates,
             upstream_id=None,  # System agent has no upstream
             env_id=env_id,
-            tick_config=tick_config or DEFAULT_SYSTEM_AGENT_TICK_CONFIG,
+            schedule_config=schedule_config or DEFAULT_SYSTEM_AGENT_SCHEDULE_CONFIG,
             policy=policy,
             protocol=protocol
         )
 
-    def init_state(self, features: List[FeatureProvider] = []) -> State:
+    def init_state(self, features: List[Feature] = []) -> State:
         """Initialize a SystemAgentState from the provided features."""
         return SystemAgentState(
             owner_id=self.agent_id,
@@ -67,7 +67,7 @@ class SystemAgent(Agent):
             features={f.feature_name: f for f in features}
         )
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         """Initialize an empty Action (system agent manages simulation, not direct actions)."""
         return Action()
 
@@ -81,7 +81,7 @@ class SystemAgent(Agent):
     # ============================================
     # Core Lifecycle Methods Overrides (see heron/agents/base.py for more details)
     # ============================================
-    def reset(self, *, seed: Optional[int] = None, proxy: Optional[ProxyAgent] = None, **kwargs) -> Any:
+    def reset(self, *, seed: Optional[int] = None, proxy: Optional[Proxy] = None, **kwargs) -> Any:
         """Reset system agent and all coordinators. [Both Modes]
 
         Args:
@@ -92,7 +92,7 @@ class SystemAgent(Agent):
 
         return self.observe(proxy=proxy), {}
     
-    def execute(self, actions: Dict[AgentID, Any], proxy: Optional[ProxyAgent] = None) -> None:
+    def execute(self, actions: Dict[AgentID, Any], proxy: Optional[Proxy] = None) -> None:
         """Execute actions with hierarchical coordination and simulation. [Training Mode]"""
         if not proxy:
             raise ValueError("We still require a valid proxy agent so far")
@@ -166,7 +166,7 @@ class SystemAgent(Agent):
                 sender_id=self.agent_id,
                 recipient_id=PROXY_AGENT_ID,
                 message={MSG_GET_INFO: INFO_TYPE_OBS, MSG_KEY_PROTOCOL: self.protocol},
-                delay=self._tick_config.msg_delay,
+                delay=self._schedule_config.msg_delay,
             )
         else:
             logging.debug(f"{self} doesn't act itself, because there's no action policy")
@@ -228,7 +228,7 @@ class SystemAgent(Agent):
                 sender_id=self.agent_id,
                 recipient_id=PROXY_AGENT_ID,
                 message={MSG_SET_STATE: STATE_TYPE_GLOBAL, MSG_KEY_BODY: updated_global_state},
-                delay=self._tick_config.msg_delay,
+                delay=self._schedule_config.msg_delay,
             )
         elif "get_local_state_response" in message_content:
             response_data = message_content["get_local_state_response"]
@@ -274,7 +274,7 @@ class SystemAgent(Agent):
                 sender_id=self.agent_id,
                 recipient_id=PROXY_AGENT_ID,
                 message={MSG_GET_INFO: INFO_TYPE_LOCAL_STATE, MSG_KEY_PROTOCOL: self.protocol},
-                delay=self._tick_config.reward_delay,
+                delay=self._schedule_config.reward_delay,
             )
         else:
             raise NotImplementedError
@@ -292,7 +292,7 @@ class SystemAgent(Agent):
             sender_id=self.agent_id,
             recipient_id=PROXY_AGENT_ID,
             message={MSG_GET_INFO: INFO_TYPE_GLOBAL_STATE, MSG_KEY_PROTOCOL: self.protocol},
-            delay=self._tick_config.msg_delay,
+            delay=self._schedule_config.msg_delay,
         )
     
 
@@ -310,20 +310,20 @@ class SystemAgent(Agent):
         """
         simulation_func: simulation function passed from environment
         wait_interval: waiting time between action kick-off and simulation starts.
-            If None, derives from current tick_config.tick_interval at runtime.
+            If None, derives from current schedule_config.tick_interval at runtime.
         pre_step_func: optional hook called at the start of each step (before actions)
         """
         self._simulation_func = simulation_func
         self._env_state_to_global_state = env_state_to_global_state
         self._global_state_to_env_state = global_state_to_env_state
-        self._explicit_wait_interval = wait_interval  # None means derive from tick_config
+        self._explicit_wait_interval = wait_interval  # None means derive from schedule_config
         self._pre_step_func = pre_step_func
 
     @property
     def _simulation_wait_interval(self) -> float:
         if self._explicit_wait_interval is not None:
             return self._explicit_wait_interval
-        return self.tick_config.tick_interval
+        return self.schedule_config.tick_interval
 
     def simulate(self, global_state: Dict[AgentID, Any]) -> Any:
         # proxy.get_global_states() returns a flat {agent_id: state_dict} dict,

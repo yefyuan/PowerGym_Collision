@@ -9,12 +9,12 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.utils.array_utils import as_f32, cat_f32
 
 
 @dataclass(slots=True)
-class BusVoltages(FeatureProvider):
+class BusVoltages(Feature):
     """Bus voltage magnitudes and angles across the network.
 
     Captures voltage state at all buses, which is essential for
@@ -112,7 +112,7 @@ class BusVoltages(FeatureProvider):
 
 
 @dataclass(slots=True)
-class LineFlows(FeatureProvider):
+class LineFlows(Feature):
     """Power flows and loading on transmission lines.
 
     Monitors line utilization and power transfer, critical for
@@ -226,7 +226,7 @@ class LineFlows(FeatureProvider):
 
 
 @dataclass(slots=True)
-class NetworkMetrics(FeatureProvider):
+class NetworkMetrics(Feature):
     """Aggregate network-level metrics.
 
     Provides system-wide statistics like total generation, load,

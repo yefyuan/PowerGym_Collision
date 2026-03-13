@@ -9,11 +9,11 @@ import numpy as np
 from dataclasses import dataclass
 from typing import ClassVar, Sequence
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 
 
 @dataclass(slots=True)
-class EVSlotFeature(FeatureProvider):
+class EVSlotFeature(Feature):
     visibility: ClassVar[Sequence[str]] = ['owner']
     occupied: int = 0
     soc: float = 0.0

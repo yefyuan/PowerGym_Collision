@@ -41,8 +41,8 @@ from typing import Any, Callable, Dict, List, Optional, Type
 from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.agents.field_agent import FieldAgent
 from heron.agents.system_agent import SystemAgent
-from heron.core.feature import FeatureProvider
-from heron.scheduling.tick_config import TickConfig
+from heron.core.feature import Feature
+from heron.scheduling.tick_config import ScheduleConfig
 from heron.envs.base import HeronEnv
 from heron.protocols.base import Protocol
 from heron.envs.simple import SimpleEnv
@@ -52,9 +52,9 @@ from heron.envs.simple import SimpleEnv
 class _AgentSpec:
     agent_cls: Type[FieldAgent]
     agent_id: str
-    features: List[FeatureProvider] = field(default_factory=list)
+    features: List[Feature] = field(default_factory=list)
     coordinator_id: Optional[str] = None
-    tick_config: Optional[TickConfig] = None
+    schedule_config: Optional[ScheduleConfig] = None
     kwargs: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -62,17 +62,17 @@ class _AgentSpec:
 class _CoordinatorSpec:
     agent_id: str
     agent_cls: Type[CoordinatorAgent] = CoordinatorAgent
-    features: List[FeatureProvider] = field(default_factory=list)
+    features: List[Feature] = field(default_factory=list)
     protocol: Optional[Protocol] = None
     subordinate_patterns: List[str] = field(default_factory=list)
     subordinate_ids: List[str] = field(default_factory=list)
-    tick_config: Optional[TickConfig] = None
+    schedule_config: Optional[ScheduleConfig] = None
     kwargs: Dict[str, Any] = field(default_factory=dict)
 
 @dataclass
 class _SystemSpec:
-    features: List[FeatureProvider] = field(default_factory=list)
-    tick_config: Optional[TickConfig] = None
+    features: List[Feature] = field(default_factory=list)
+    schedule_config: Optional[ScheduleConfig] = None
     kwargs: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -103,8 +103,8 @@ class EnvBuilder:
         prefix: str,
         agent_cls: Type[FieldAgent],
         count: int = 1,
-        features: Optional[List[FeatureProvider]] = None,
-        tick_config: Optional[TickConfig] = None,
+        features: Optional[List[Feature]] = None,
+        schedule_config: Optional[ScheduleConfig] = None,
         coordinator: Optional[str] = None,
         **kwargs: Any,
     ) -> "EnvBuilder":
@@ -120,7 +120,7 @@ class EnvBuilder:
                 agent_id=agent_id,
                 features=list(features or []),
                 coordinator_id=coordinator,
-                tick_config=tick_config,
+                schedule_config=schedule_config,
                 kwargs=dict(kwargs),
             ))
         return self
@@ -129,9 +129,9 @@ class EnvBuilder:
         self,
         agent_id: str,
         agent_cls: Type[FieldAgent],
-        features: Optional[List[FeatureProvider]] = None,
+        features: Optional[List[Feature]] = None,
         coordinator: Optional[str] = None,
-        tick_config: Optional[TickConfig] = None,
+        schedule_config: Optional[ScheduleConfig] = None,
         **kwargs: Any,
     ) -> "EnvBuilder":
         """Register a single named field agent."""
@@ -140,7 +140,7 @@ class EnvBuilder:
             agent_id=agent_id,
             features=list(features or []),
             coordinator_id=coordinator,
-            tick_config=tick_config,
+            schedule_config=schedule_config,
             kwargs=dict(kwargs),
         ))
         return self
@@ -153,10 +153,10 @@ class EnvBuilder:
         self,
         coordinator_id: str,
         agent_cls: Type[CoordinatorAgent] = CoordinatorAgent,
-        features: Optional[List[FeatureProvider]] = None,
+        features: Optional[List[Feature]] = None,
         protocol: Optional[Protocol] = None,
         subordinates: Optional[List[str]] = None,
-        tick_config: Optional[TickConfig] = None,
+        schedule_config: Optional[ScheduleConfig] = None,
         **kwargs: Any,
     ) -> "EnvBuilder":
         """Register a coordinator agent.
@@ -179,22 +179,22 @@ class EnvBuilder:
             protocol=protocol,
             subordinate_patterns=patterns,
             subordinate_ids=explicit,
-            tick_config=tick_config,
+            schedule_config=schedule_config,
             kwargs=dict(kwargs),
         ))
         return self
     
     def add_system_agent(
         self,
-        features: Optional[List[FeatureProvider]] = None,
-        tick_config: Optional[TickConfig] = None,
+        features: Optional[List[Feature]] = None,
+        schedule_config: Optional[ScheduleConfig] = None,
         **kwargs: Any,
     ) -> "EnvBuilder":
         """Configure the SystemAgent (auto-created if not specified)."""
-        if features or tick_config or kwargs:
+        if features or schedule_config or kwargs:
             self._system_spec = _SystemSpec(
                 features=list(features or []),
-                tick_config=tick_config,
+                schedule_config=schedule_config,
                 kwargs=dict(kwargs),
             )
         return self
@@ -244,8 +244,8 @@ class EnvBuilder:
             ctor_kwargs = dict(agent_id=spec.agent_id, **spec.kwargs)
             if spec.features:
                 ctor_kwargs["features"] = [copy.deepcopy(f) for f in spec.features]
-            if spec.tick_config is not None:
-                ctor_kwargs["tick_config"] = spec.tick_config
+            if spec.schedule_config is not None:
+                ctor_kwargs["schedule_config"] = spec.schedule_config
             agents[spec.agent_id] = spec.agent_cls(**ctor_kwargs)
         return agents
 
@@ -279,8 +279,8 @@ class EnvBuilder:
                 subordinates=subordinates,
                 **cspec.kwargs,
             )
-            if cspec.tick_config is not None:
-                ctor_kwargs["tick_config"] = cspec.tick_config
+            if cspec.schedule_config is not None:
+                ctor_kwargs["schedule_config"] = cspec.schedule_config
             if cspec.protocol is not None:
                 ctor_kwargs["protocol"] = cspec.protocol
             coordinators.append(cspec.agent_cls(**ctor_kwargs))
@@ -301,12 +301,12 @@ class EnvBuilder:
         if not self._system_spec:
             return None
         features = list(self._system_spec.features)
-        tick_config = self._system_spec.tick_config
+        schedule_config = self._system_spec.schedule_config
         kwargs = dict(self._system_spec.kwargs)
 
         system_agent = SystemAgent(
             features=features,
-            tick_config=tick_config,
+            schedule_config=schedule_config,
             subordinates={c.agent_id: c for c in coordinators},
             **kwargs,
         )

@@ -15,7 +15,7 @@ This document provides a comprehensive description of the two execution modes in
 5. [Event-Driven Testing Mode](#event-driven-testing-mode)
 6. [Protocol-Based Coordination](#protocol-based-coordination)
 7. [Observation & Action Data Flow](#observation--action-data-flow)
-8. [ProxyAgent State Management](#proxyagent-state-management)
+8. [Proxy State Management](#proxyagent-state-management)
 9. [Handler Registration & Event Processing](#handler-registration--event-processing)
 10. [Complete Execution Examples](#complete-execution-examples)
 
@@ -34,15 +34,15 @@ SystemAgent (L3) - Root orchestrator
 
 | Class | Purpose | Key Methods |
 |-------|---------|-------------|
-| **EnvCore** | Environment base class | `step()`, `run_event_driven()`, `reset()` |
+| **BaseEnv** | Environment base class | `step()`, `run_event_driven()`, `reset()` |
 | **SystemAgent** | Top-level orchestrator | `execute()`, `tick()`, `simulate()` |
 | **CoordinatorAgent** | Mid-level coordinator | `execute()`, `tick()`, `coordinate()` |
 | **FieldAgent** | Leaf execution agent | `execute()`, `tick()`, `apply_action()` |
-| **ProxyAgent** | State distribution hub | `get_observation()`, `set_local_state()` |
+| **Proxy** | State distribution hub | `get_observation()`, `set_local_state()` |
 | **Action** | Action representation | `vector()`, `set_values()`, `clip()` |
 | **Observation** | Observation with array interface | `vector()`, `__array__()`, `shape` |
 | **State** | Agent state container (features as Dict) | `observed_by()`, `to_dict()`, `from_dict()` |
-| **FeatureProvider** | Feature definition | `vector()`, `is_observable_by()` |
+| **Feature** | Feature definition | `vector()`, `is_observable_by()` |
 | **EventScheduler** | Discrete event simulation | `run_until()`, `schedule_agent_tick()` |
 | **MessageBroker** | Inter-agent messaging | `publish()`, `consume()` |
 | **Protocol** | Coordination logic (communication + action) | `coordinate()` |
@@ -131,7 +131,7 @@ def compute_action(self, obs, scheduler):
     if self.action:
         scheduler.schedule_action_effect(
             agent_id=self.agent_id,
-            delay=self._tick_config.act_delay,
+            delay=self._schedule_config.act_delay,
         )
 ```
 
@@ -295,7 +295,7 @@ MSG_KEY_PROTOCOL = "protocol"
 ```
 env = CustomEnv(system_agent=..., coordinator_agents=[...])
 │
-├─> EnvCore.__init__()
+├─> BaseEnv.__init__()
 │   │
 │   ├─> _register_agents(system_agent, coordinator_agents)
 │   │   ├─> If system_agent provided: use it directly
@@ -310,15 +310,15 @@ env = CustomEnv(system_agent=..., coordinator_agents=[...])
 │   │   └─> _register_agent(system_agent)  [recursive for all subordinates]
 │   │       └─> Sets env_id on each agent, registers in self.registered_agents
 │   │
-│   ├─> Create ProxyAgent(agent_id=PROXY_AGENT_ID)
-│   │   └─> _register_agent(proxy_agent)
+│   ├─> Create Proxy(agent_id=PROXY_AGENT_ID)
+│   │   └─> _register_agent(proxy)
 │   │
 │   ├─> Setup MessageBroker
 │   │   ├─> MessageBroker.init(config) -> InMemoryBroker (default)
 │   │   ├─> message_broker.attach(registered_agents)
-│   │   └─> proxy_agent.set_message_broker(message_broker)
+│   │   └─> proxy.set_message_broker(message_broker)
 │   │
-│   ├─> proxy_agent.attach(registered_agents)
+│   ├─> proxy.attach(registered_agents)
 │   │   ├─> For each agent (except proxy):
 │   │   │   └─> _register_agent(agent)
 │   │   │       ├─> Track agent_id, level, upstream_id
@@ -329,7 +329,7 @@ env = CustomEnv(system_agent=..., coordinator_agents=[...])
 │   │   └─> _setup_channels()  # Create proxy->agent info channels
 │   │
 │   └─> Setup EventScheduler
-│       ├─> EventScheduler.init(config) -> DefaultScheduler
+│       ├─> EventScheduler.init(config) -> EventScheduler
 │       └─> scheduler.attach(registered_agents)
 │           ├─> Register tick configs per agent
 │           ├─> Register event handlers per agent
@@ -350,7 +350,7 @@ obs, info = env.reset(seed=42)
 │
 ├─> scheduler.reset(start_time=0.0) -> Clear event queue, re-schedule system tick
 ├─> clear_broker_environment() -> Clear all messages for this env_id
-├─> proxy_agent.reset(seed) -> state_cache = {} (cleared)
+├─> proxy.reset(seed) -> state_cache = {} (cleared)
 │
 ├─> system_agent.reset(seed, proxy)
 │   ├─> Agent.reset() [base class]:
@@ -364,7 +364,7 @@ obs, info = env.reset(seed=42)
 │   └─> SystemAgent.reset() override:
 │       └─> return self.observe(proxy=proxy), {}
 │
-├─> proxy_agent.init_global_state()  # Re-compile global state after all resets
+├─> proxy.init_global_state()  # Re-compile global state after all resets
 │
 └─> return (observations, {})
 ```
@@ -494,11 +494,11 @@ class EventType(Enum):
     CUSTOM = "custom"
 ```
 
-### **3. TickConfig - Timing Parameters**
+### **3. ScheduleConfig - Timing Parameters**
 
 ```python
 @dataclass
-class TickConfig:
+class ScheduleConfig:
     tick_interval: float = 1.0   # How often agent ticks
     obs_delay: float = 0.0       # Observation latency
     act_delay: float = 0.0       # Action execution delay
@@ -520,7 +520,7 @@ class TickConfig:
 ### **4. Event-Driven Execution Flow**
 
 ```
-result = env.run_event_driven(event_analyzer, t_end=100.0)
+result = env.run_event_driven(episode_analyzer, t_end=100.0)
 │
 └─> for event in scheduler.run_until(t_end=100.0):
     │
@@ -530,7 +530,7 @@ result = env.run_event_driven(event_analyzer, t_end=100.0)
     │   ├─> handler = get_handler(event.event_type, event.agent_id)
     │   └─> handler(event, scheduler)
     │
-    └─> result.add_event_analysis(event_analyzer.parse_event(event))
+    └─> result.add_event_analysis(episode_analyzer.parse_event(event))
 ```
 
 ### **5. Detailed Event Sequence**
@@ -568,7 +568,7 @@ t=0.0: AGENT_TICK(system_agent)
 
 ```
 t=msg_delay: MESSAGE_DELIVERY(proxy) - observation request
-└─> ProxyAgent.message_delivery_handler()
+└─> Proxy.message_delivery_handler()
     ├─> info_type = "obs"
     ├─> obs = get_observation(system_agent, protocol)
     │   ├─> local = state.observed_by(system_id, 3)
@@ -657,7 +657,7 @@ t=field_tick+act_delay: ACTION_EFFECT(field_1)
 
 ```
 t=field_tick+act_delay+msg_delay: MESSAGE_DELIVERY(proxy) - state update
-└─> ProxyAgent.message_delivery_handler()
+└─> Proxy.message_delivery_handler()
     ├─> state = State.from_dict(message['body'])
     ├─> set_local_state(agent_id, state)
     └─> schedule_message_delivery(
@@ -695,7 +695,7 @@ t=wait_interval: SIMULATION(system_agent)
 
 ```
 t=wait_interval+msg_delay: MESSAGE_DELIVERY(proxy) - global state request
-└─> ProxyAgent returns global_state
+└─> Proxy returns global_state
 ```
 
 ```
@@ -733,13 +733,13 @@ t=reward_time: MESSAGE_DELIVERY(agents) - local state response for reward
     # SystemAgent additionally: if not terminated/truncated, schedule next tick
 ```
 
-### **6. Result Collection via EventAnalyzer**
+### **6. Result Collection via EpisodeAnalyzer**
 
 ```
-env.run_event_driven(event_analyzer, t_end)
+env.run_event_driven(episode_analyzer, t_end)
 │
 └─> For each event:
-    └─> event_analyzer.parse_event(event)
+    └─> episode_analyzer.parse_event(event)
         │
         ├─> If event.event_type == MESSAGE_DELIVERY:
         │   ├─> message = event.payload["message"]
@@ -753,7 +753,7 @@ env.run_event_driven(event_analyzer, t_end)
         │
         └─> Returns EventAnalysis for this event
 
-EpisodeResult accumulates all EventAnalysis objects
+EpisodeStats accumulates all EventAnalysis objects
 ├─> result.summary() -> event counts, message type counts, agent counts
 ├─> result.get_event_counts() -> {EventType: count}
 ├─> result.get_message_type_counts() -> {message_type: count}
@@ -903,7 +903,7 @@ Agent needs observation
 │   KEY DESIGN PRINCIPLE: When agent asks for obs, proxy gives BOTH obs AND local_state
 │   This enables state syncing alongside observation delivery.
 │
-└─> ProxyAgent.get_observation(sender_id, protocol)
+└─> Proxy.get_observation(sender_id, protocol)
     ├─> global_state = get_global_states(sender_id, protocol)
     │   └─> For each agent: state.observed_by(sender_id, requestor_level)
     ├─> local_state = get_local_state(sender_id, protocol, include_subordinate_rewards=False)
@@ -973,7 +973,7 @@ Event-Driven Mode:
 
 ---
 
-## **ProxyAgent State Management**
+## **Proxy State Management**
 
 ### **State Cache Structure**
 
@@ -984,7 +984,7 @@ proxy.state_cache = {
         "system_agent": SystemAgentState(
             owner_id="system_agent",
             owner_level=3,
-            features={"SystemFeature": FeatureProvider(...)}  # Dict, not List!
+            features={"SystemFeature": Feature(...)}  # Dict, not List!
         ),
         "coordinator_1": CoordinatorAgentState(...),
         "field_1": FieldAgentState(...),
@@ -1117,7 +1117,7 @@ class Agent:
 | **SystemAgent** | tick() | No-op | obs/global_state/local_state/completion handlers | Request global state |
 | **CoordinatorAgent** | tick() | No-op | obs/local_state/completion handlers | N/A |
 | **FieldAgent** | tick() | apply_action() + send state | obs/local_state/completion handlers | N/A |
-| **ProxyAgent** | N/A | N/A | get_info/set_state/set_tick_result handlers | N/A |
+| **Proxy** | N/A | N/A | get_info/set_state/set_tick_result handlers | N/A |
 
 ### **Event Processing Loop**
 
@@ -1184,10 +1184,10 @@ obs, rewards, terminated, truncated, info = env.step(actions)
 ```python
 # Setup
 obs, info = env.reset()
-event_analyzer = EventAnalyzer(verbose=False, track_data=False)
+episode_analyzer = EpisodeAnalyzer(verbose=False, track_data=False)
 
 # Run simulation
-episode_result = env.run_event_driven(event_analyzer, t_end=100.0)
+episode_stats = env.run_event_driven(episode_analyzer, t_end=100.0)
 
 # Internal execution:
 # - Scheduler starts with AGENT_TICK(system_agent) at t=0
@@ -1196,14 +1196,14 @@ episode_result = env.run_event_driven(event_analyzer, t_end=100.0)
 # - FieldAgents apply actions with realistic delays
 # - States updated via messages through proxy
 # - State completion triggers reward computation cascade from parent
-# - EventAnalyzer extracts results from event stream
+# - EpisodeAnalyzer extracts results from event stream
 
 # Retrieve results
-print(episode_result.summary())
-print(f"Events: {episode_result.num_events}")
-print(f"Observations: {episode_result.observation_count}")
-print(f"Actions: {episode_result.action_result_count}")
-print(event_analyzer.get_reward_history())
+print(episode_stats.summary())
+print(f"Events: {episode_stats.num_events}")
+print(f"Observations: {episode_stats.observation_count}")
+print(f"Actions: {episode_stats.action_result_count}")
+print(episode_analyzer.get_reward_history())
 ```
 
 ---
@@ -1221,7 +1221,7 @@ print(event_analyzer.get_reward_history())
 | **State Syncing** | sync_state_from_observed in execute() | sync_state_from_observed in message handler |
 | **Observation** | Direct proxy.get_observation() | Message-based (obs + local_state bundled) |
 | **Reward Computation** | Direct via compute_rewards() | Parent-initiated cascade after state completion |
-| **Result Retrieval** | `proxy.get_step_results()` | EventAnalyzer from event stream |
+| **Result Retrieval** | `proxy.get_step_results()` | EpisodeAnalyzer from event stream |
 | **Hierarchy Coordination** | Sequential function calls | Cascading tick events |
 | **Use Case** | RL training with full observability | Deployment testing with latency |
 
@@ -1329,7 +1329,7 @@ send_subordinate_action(subordinate_id, action)
 - Observation responses bundle both obs and local_state for state syncing
 - Delayed action effects (FieldAgent only)
 - Parent-initiated reward computation cascade after state completion
-- Results collected via EventAnalyzer from event stream
+- Results collected via EpisodeAnalyzer from event stream
 - Tests deployment scenario with communication delays
 
 **Both modes share the same agent hierarchy, state management infrastructure, protocol system, and action priority rules, ensuring consistency between training and testing.**

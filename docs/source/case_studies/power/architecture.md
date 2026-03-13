@@ -13,7 +13,7 @@ case_studies/power/
 │   │   ├── generator.py        # Dispatchable generator device
 │   │   ├── storage.py          # Energy storage system (ESS)
 │   │   ├── transformer.py      # Transformer with tap changer
-│   │   └── proxy_agent.py      # Extends heron.agents.proxy_agent
+│   │   └── proxy.py      # Extends heron.agents.proxy
 │   │
 │   ├── core/                   # Extensions to heron.core
 │   │   ├── features/           # Power-specific features
@@ -106,6 +106,6 @@ case_studies/power/
 |-----------------|---------------------|
 | `FieldAgent` | `DeviceAgent`, `Generator`, `ESS`, `Transformer` |
 | `CoordinatorAgent` | `PowerGridAgent` |
-| `FeatureProvider` | `ElectricalFeature`, `StorageFeature`, `ThermalFeature` |
+| `Feature` | `ElectricalFeature`, `StorageFeature`, `ThermalFeature` |
 | `Protocol` | `SetpointProtocol`, `PriceSignalProtocol` |
 | `ParallelEnv` | `NetworkedGridEnv`, `MultiAgentMicrogrids` |

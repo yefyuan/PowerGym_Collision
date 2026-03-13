@@ -5,11 +5,11 @@ HERON environments support two execution modes:
   2. Event-driven (evaluation): env.run_event_driven(), realistic timing
 
 This script demonstrates:
-1. Building an env with TickConfig for event-driven evaluation
+1. Building an env with ScheduleConfig for event-driven evaluation
 2. Step-based execution (training mode)
-3. Event-driven execution with EventAnalyzer
+3. Event-driven execution with EpisodeAnalyzer
 4. Comparing behavior across modes
-5. EpisodeResult analysis -- event counts, agent activity, timing
+5. EpisodeStats analysis -- event counts, agent activity, timing
 
 Domain: Two thermostats controlling room temperature.
   - Same agents, same physics, different execution modes.
@@ -27,13 +27,13 @@ import numpy as np
 from heron.agents.field_agent import FieldAgent
 from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.core.action import Action
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.policies import Policy, obs_to_vector, vector_to_action
 from heron.envs.simple import SimpleEnv
 from heron.scheduling import (
-    TickConfig,
+    ScheduleConfig,
     JitterType,
-    EventAnalyzer,
+    EpisodeAnalyzer,
 )
 
 
@@ -42,7 +42,7 @@ from heron.scheduling import (
 # ---------------------------------------------------------------------------
 
 @dataclass(slots=True)
-class RoomTempFeature(FeatureProvider):
+class RoomTempFeature(Feature):
     """Room temperature (public so coordinator can observe it)."""
     visibility: ClassVar[Sequence[str]] = ["public"]
     temp: float = 20.0
@@ -52,7 +52,7 @@ class RoomTempFeature(FeatureProvider):
 class Thermostat(FieldAgent):
     """Thermostat that adjusts heating power."""
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         action = Action()
         action.set_specs(dim_c=1, range=(np.array([-1.0]), np.array([1.0])))
         return action
@@ -142,10 +142,10 @@ def build_env_step_based():
 
 
 def build_env_event_driven():
-    """Build env for event-driven mode with explicit TickConfig."""
+    """Build env for event-driven mode with explicit ScheduleConfig."""
     # Field agents: tick every 1s with observation and action delays
-    # Each agent gets its own TickConfig instance (independent jitter RNG)
-    field_tick_a = TickConfig.with_jitter(
+    # Each agent gets its own ScheduleConfig instance (independent jitter RNG)
+    field_tick_a = ScheduleConfig.with_jitter(
         tick_interval=1.0,
         obs_delay=0.05,
         act_delay=0.1,
@@ -154,7 +154,7 @@ def build_env_event_driven():
         jitter_ratio=0.1,
         seed=42,
     )
-    field_tick_b = TickConfig.with_jitter(
+    field_tick_b = ScheduleConfig.with_jitter(
         tick_interval=1.0,
         obs_delay=0.05,
         act_delay=0.1,
@@ -165,7 +165,7 @@ def build_env_event_driven():
     )
 
     # Coordinator: ticks every 5s (slower decision-making)
-    coord_tick = TickConfig.with_jitter(
+    coord_tick = ScheduleConfig.with_jitter(
         tick_interval=5.0,
         obs_delay=0.1,
         act_delay=0.2,
@@ -177,7 +177,7 @@ def build_env_event_driven():
     )
 
     # System agent: ticks every 10s
-    system_tick = TickConfig.with_jitter(
+    system_tick = ScheduleConfig.with_jitter(
         tick_interval=10.0,
         obs_delay=0.1,
         act_delay=0.2,
@@ -191,23 +191,23 @@ def build_env_event_driven():
     thermo_a = Thermostat(
         agent_id="room_a",
         features=[RoomTempFeature()],
-        tick_config=field_tick_a,
+        schedule_config=field_tick_a,
     )
     thermo_b = Thermostat(
         agent_id="room_b",
         features=[RoomTempFeature()],
-        tick_config=field_tick_b,
+        schedule_config=field_tick_b,
     )
     coordinator = CoordinatorAgent(
         agent_id="building",
         subordinates={"room_a": thermo_a, "room_b": thermo_b},
-        tick_config=coord_tick,
+        schedule_config=coord_tick,
     )
     return SimpleEnv(
         coordinator_agents=[coordinator],
         simulation_func=thermostat_simulation,
         env_id="thermostat_event",
-        system_agent_tick_config=system_tick,
+        system_agent_schedule_config=system_tick,
     )
 
 
@@ -274,7 +274,7 @@ def demo_event_driven():
     })
 
     # Run event-driven simulation
-    analyzer = EventAnalyzer(verbose=False, track_data=True)
+    analyzer = EpisodeAnalyzer(verbose=False, track_data=True)
     t_end = 30.0
     result = env.run_event_driven(analyzer, t_end=t_end)
 
@@ -312,10 +312,10 @@ def demo_event_driven():
 def demo_event_analysis(result):
     """Analyze the event-driven episode result."""
     print("\n" + "=" * 60)
-    print("Part 3: EpisodeResult Analysis")
+    print("Part 3: EpisodeStats Analysis")
     print("=" * 60)
     print("""
-  EpisodeResult collects all event analyses from run_event_driven().
+  EpisodeStats collects all event analyses from run_event_driven().
   It provides summary statistics and per-agent breakdowns.
 """)
 
@@ -355,7 +355,7 @@ def demo_mode_comparison():
   Deterministic timing           Jittered timing (configurable)
   Fast (no scheduling)           Realistic (priority queue)
   No policies needed             Policies attached to agents
-  Returns (obs, rew, ...)        Returns EpisodeResult
+  Returns (obs, rew, ...)        Returns EpisodeStats
 
   The key insight: train fast with step-based mode,
   then validate with realistic event-driven timing.
@@ -394,12 +394,12 @@ def main():
     2. Event-driven: run_event_driven() for realistic evaluation
 
   Event-driven setup:
-    - Assign TickConfig with delays to each agent
+    - Assign ScheduleConfig with delays to each agent
     - Attach Policy objects via env.set_agent_policies()
-    - Create EventAnalyzer to collect statistics
+    - Create EpisodeAnalyzer to collect statistics
     - Call env.run_event_driven(analyzer, t_end=...)
 
-  EpisodeResult provides:
+  EpisodeStats provides:
     - Event counts by type and agent
     - Message type breakdown
     - Reward history per agent

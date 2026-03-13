@@ -28,7 +28,7 @@ import numpy as np
 from heron.agents.field_agent import FieldAgent
 from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.core.action import Action
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.envs.simple import SimpleEnv
 
 
@@ -251,7 +251,7 @@ def demo_scale_unscale():
 # ---------------------------------------------------------------------------
 
 @dataclass(slots=True)
-class GeneratorFeature(FeatureProvider):
+class GeneratorFeature(Feature):
     """Generator with power output and status."""
     visibility: ClassVar[Sequence[str]] = ["public"]
     power: float = 0.0
@@ -259,7 +259,7 @@ class GeneratorFeature(FeatureProvider):
 
 
 @dataclass(slots=True)
-class TransformerFeature(FeatureProvider):
+class TransformerFeature(Feature):
     """Transformer with tap position."""
     visibility: ClassVar[Sequence[str]] = ["public"]
     tap_pos: float = 5.0
@@ -269,7 +269,7 @@ class TransformerFeature(FeatureProvider):
 class Generator(FieldAgent):
     """Generator with mixed action: continuous power + discrete on/off."""
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         action = Action()
         action.set_specs(
             dim_c=1,                                      # power setpoint [0, 100] MW
@@ -302,7 +302,7 @@ class Transformer(FieldAgent):
         self._num_taps = num_taps
         super().__init__(*args, **kwargs)
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         action = Action()
         action.set_specs(dim_d=1, ncats=[self._num_taps])  # tap positions 0-10
         return action

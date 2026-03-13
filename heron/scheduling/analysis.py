@@ -39,7 +39,7 @@ class EventAnalysis:
         )
 
 
-class EventAnalyzer:
+class EpisodeAnalyzer:
     """Analyzes events during event-driven simulation.
 
     Focuses on tracking agent observations, global/local states,
@@ -52,7 +52,7 @@ class EventAnalyzer:
     - Action execution results (set_tick_result)
 
     Example:
-        analyzer = EventAnalyzer()
+        analyzer = EpisodeAnalyzer()
         result = env.run_event_driven(analyzer, t_end=100.0)
         print(f"Observations: {result.observation_count}")
         print(f"State updates: {result.state_update_count}")
@@ -149,7 +149,7 @@ class EventAnalyzer:
         )
 
         if self.verbose and message_type:
-            print(f"[EventAnalyzer] {analysis}")
+            print(f"[EpisodeAnalyzer] {analysis}")
             if data_summary:
                 print(f"  Data: {data_summary}")
 
@@ -250,7 +250,7 @@ class EventAnalyzer:
         return self.reward_history
 
 
-class EpisodeResult:
+class EpisodeStats:
     """Tracks results from an event-driven episode.
 
     Accumulates event analyses and provides summary statistics
@@ -408,7 +408,7 @@ class EpisodeResult:
 
     def __repr__(self) -> str:
         return (
-            f"EpisodeResult(num_events={self.num_events}, "
+            f"EpisodeStats(num_events={self.num_events}, "
             f"duration={self.duration:.3f}, "
             f"obs={self.observation_count}, "
             f"actions={self.action_result_count})"

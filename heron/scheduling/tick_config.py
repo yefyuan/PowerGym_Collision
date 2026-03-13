@@ -1,13 +1,13 @@
 """Tick configuration for event-driven scheduling.
 
-This module provides TickConfig dataclass for centralized tick timing
+This module provides ScheduleConfig dataclass for centralized tick timing
 configuration with support for randomization (jitter) in testing mode.
 
 Default tick config constants for each agent type:
 
-- ``DEFAULT_FIELD_AGENT_TICK_CONFIG``       — 1.0s tick interval
-- ``DEFAULT_COORDINATOR_AGENT_TICK_CONFIG`` — 60.0s tick interval
-- ``DEFAULT_SYSTEM_AGENT_TICK_CONFIG``      — 300.0s tick interval
+- ``DEFAULT_FIELD_AGENT_SCHEDULE_CONFIG``       — 1.0s tick interval
+- ``DEFAULT_COORDINATOR_AGENT_SCHEDULE_CONFIG`` — 60.0s tick interval
+- ``DEFAULT_SYSTEM_AGENT_SCHEDULE_CONFIG``      — 300.0s tick interval
 """
 
 from dataclasses import dataclass, field
@@ -26,7 +26,7 @@ class JitterType(Enum):
 
 
 @dataclass
-class TickConfig:
+class ScheduleConfig:
     """Configuration for agent timing in event-driven mode.
 
     Encapsulates tick interval and delay parameters with optional jitter
@@ -46,10 +46,10 @@ class TickConfig:
 
     Example:
         # Deterministic config (for training)
-        config = TickConfig(tick_interval=1.0, obs_delay=0.1)
+        config = ScheduleConfig(tick_interval=1.0, obs_delay=0.1)
 
         # With jitter (for testing)
-        config = TickConfig.with_jitter(
+        config = ScheduleConfig.with_jitter(
             tick_interval=1.0,
             obs_delay=0.1,
             act_delay=0.2,
@@ -170,7 +170,7 @@ class TickConfig:
         act_delay: float = 0.0,
         msg_delay: float = 0.0,
         reward_delay: float = 0.0,
-    ) -> "TickConfig":
+    ) -> "ScheduleConfig":
         """Create deterministic config (no jitter) - for training.
 
         Args:
@@ -181,7 +181,7 @@ class TickConfig:
             reward_delay: Reward aggregation delay
 
         Returns:
-            TickConfig with jitter disabled
+            ScheduleConfig with jitter disabled
         """
         return cls(
             tick_interval=tick_interval,
@@ -204,7 +204,7 @@ class TickConfig:
         jitter_ratio: float = 0.1,
         min_delay: float = 0.0,
         seed: Optional[int] = None,
-    ) -> "TickConfig":
+    ) -> "ScheduleConfig":
         """Create config with jitter enabled - for testing.
 
         Args:
@@ -219,7 +219,7 @@ class TickConfig:
             seed: Optional RNG seed
 
         Returns:
-            TickConfig with jitter enabled
+            ScheduleConfig with jitter enabled
         """
         rng = np.random.default_rng(seed) if seed is not None else None
         return cls(
@@ -241,6 +241,6 @@ class TickConfig:
 # The tick_interval values mirror the agent hierarchy's natural cadence:
 #   Field (1s) < Coordinator (60s) < System (300s)
 
-DEFAULT_FIELD_AGENT_TICK_CONFIG = TickConfig.deterministic(tick_interval=1.0)
-DEFAULT_COORDINATOR_AGENT_TICK_CONFIG = TickConfig.deterministic(tick_interval=60.0)
-DEFAULT_SYSTEM_AGENT_TICK_CONFIG = TickConfig.deterministic(tick_interval=300.0)
+DEFAULT_FIELD_AGENT_SCHEDULE_CONFIG = ScheduleConfig.deterministic(tick_interval=1.0)
+DEFAULT_COORDINATOR_AGENT_SCHEDULE_CONFIG = ScheduleConfig.deterministic(tick_interval=60.0)
+DEFAULT_SYSTEM_AGENT_SCHEDULE_CONFIG = ScheduleConfig.deterministic(tick_interval=300.0)

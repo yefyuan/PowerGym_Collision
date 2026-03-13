@@ -25,7 +25,7 @@ __version__ = "0.1.0"
 from heron.core.action import Action
 from heron.core.observation import Observation
 from heron.core.state import State, FieldAgentState, CoordinatorAgentState
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.policies import Policy
 
 # Agents
@@ -33,10 +33,10 @@ from heron.agents.base import Agent
 from heron.agents.field_agent import FieldAgent
 from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.agents.system_agent import SystemAgent
-from heron.agents.proxy_agent import ProxyAgent
+from heron.agents.proxy_agent import Proxy
 
 # Environments
-from heron.envs.base import EnvCore, HeronEnv
+from heron.envs.base import BaseEnv, HeronEnv
 from heron.envs.simple import SimpleEnv
 from heron.envs.builder import EnvBuilder
 from heron.envs.adapters import PettingZooParallelEnv
@@ -55,7 +55,7 @@ from heron.scheduling import (
     Event,
     EventType,
     EventScheduler,
-    TickConfig,
+    ScheduleConfig,
     JitterType,
 )
 
@@ -68,16 +68,16 @@ __all__ = [
     "State",
     "FieldAgentState",
     "CoordinatorAgentState",
-    "FeatureProvider",
+    "Feature",
     "Policy",
     # Agents
     "Agent",
     "FieldAgent",
     "CoordinatorAgent",
     "SystemAgent",
-    "ProxyAgent",
+    "Proxy",
     # Environments
-    "EnvCore",
+    "BaseEnv",
     "HeronEnv",
     "SimpleEnv",
     "EnvBuilder",
@@ -96,6 +96,6 @@ __all__ = [
     "Event",
     "EventType",
     "EventScheduler",
-    "TickConfig",
+    "ScheduleConfig",
     "JitterType",
 ]

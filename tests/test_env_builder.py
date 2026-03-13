@@ -9,7 +9,7 @@ import pytest
 from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.agents.field_agent import FieldAgent
 from heron.core.action import Action
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.envs.builder import EnvBuilder
 from heron.protocols.vertical import VerticalProtocol
 
@@ -17,7 +17,7 @@ from heron.protocols.vertical import VerticalProtocol
 # ── Minimal test fixtures ────────────────────────────────────────
 
 @dataclass(slots=True)
-class DummyFeature(FeatureProvider):
+class DummyFeature(Feature):
     visibility: ClassVar[Sequence[str]] = ["public"]
     value: float = 0.0
 
@@ -27,7 +27,7 @@ class DummyFeature(FeatureProvider):
 
 
 class DummyAgent(FieldAgent):
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         action = Action()
         action.set_specs(dim_c=1, range=(np.array([-1.0]), np.array([1.0])))
         action.set_values(c=np.zeros(1, dtype=np.float32))

@@ -3,7 +3,7 @@
 Workflow:
 1. Train pricing policies in synchronous CTDE mode
 2. Attach trained policies to station coordinator agents
-3. Configure TickConfig with jitter for realistic async timing
+3. Configure ScheduleConfig with jitter for realistic async timing
 4. Inject test events (e.g., regulation spikes, EV arrivals, market shocks)
 5. Run event-driven simulation via env.run_event_driven()
 
@@ -26,8 +26,8 @@ import numpy as np
 from heron.agents.field_agent import FieldAgent
 from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.agents.system_agent import SystemAgent
-from heron.scheduling.analysis import EventAnalyzer
-from heron.scheduling.tick_config import JitterType, TickConfig
+from heron.scheduling.analysis import EpisodeAnalyzer
+from heron.scheduling.tick_config import JitterType, ScheduleConfig
 
 from case_studies.power.ev_public_charging_case.policies import PricingPolicy
 from case_studies.power.ev_public_charging_case.train_rllib import create_charging_env, train_simple
@@ -70,8 +70,8 @@ class TestEvent:
             raise ValueError(f"duration_s must be non-negative, got {self.duration_s}")
 
 
-def configure_tick_configs(env, seed: int = 42) -> None:
-    """Configure TickConfig with jitter for each agent level.
+def configure_schedule_configs(env, seed: int = 42) -> None:
+    """Configure ScheduleConfig with jitter for each agent level.
 
     System (L3): tick every 300s (one simulation step)
     Coordinator (L2): tick every 300s, with obs/act/msg delays
@@ -81,7 +81,7 @@ def configure_tick_configs(env, seed: int = 42) -> None:
         env: ChargingEnv with registered agents
         seed: Base seed for jitter RNG
     """
-    system_config = TickConfig.with_jitter(
+    system_config = ScheduleConfig.with_jitter(
         tick_interval=300.0,
         obs_delay=1.0,
         act_delay=2.0,
@@ -91,7 +91,7 @@ def configure_tick_configs(env, seed: int = 42) -> None:
         jitter_ratio=0.1,
         seed=seed,
     )
-    coordinator_config = TickConfig.with_jitter(
+    coordinator_config = ScheduleConfig.with_jitter(
         tick_interval=300.0,
         obs_delay=1.0,
         act_delay=2.0,
@@ -101,7 +101,7 @@ def configure_tick_configs(env, seed: int = 42) -> None:
         jitter_ratio=0.1,
         seed=seed + 1,
     )
-    field_config = TickConfig.with_jitter(
+    field_config = ScheduleConfig.with_jitter(
         tick_interval=300.0,
         obs_delay=0.5,
         act_delay=1.0,
@@ -113,16 +113,16 @@ def configure_tick_configs(env, seed: int = 42) -> None:
 
     for agent_id, agent in env.registered_agents.items():
         if isinstance(agent, SystemAgent):
-            agent.tick_config = system_config
+            agent.schedule_config = system_config
         elif isinstance(agent, CoordinatorAgent):
-            agent.tick_config = coordinator_config
+            agent.schedule_config = coordinator_config
         elif isinstance(agent, FieldAgent):
-            agent.tick_config = field_config
+            agent.schedule_config = field_config
 
     # Update scheduler's cached tick configs (cached during attach())
     for agent_id, agent in env.registered_agents.items():
-        if hasattr(agent, 'tick_config') and agent.tick_config is not None:
-            env.scheduler._agent_tick_configs[agent_id] = agent.tick_config
+        if hasattr(agent, 'schedule_config') and agent.schedule_config is not None:
+            env.scheduler._agent_schedule_configs[agent_id] = agent.schedule_config
 
 
 def apply_test_event(env, event: TestEvent, elapsed_s: float) -> None:
@@ -164,7 +164,7 @@ def deploy_event_driven(
     env.set_agent_policies(policies)
 
     # Configure tick timing with jitter
-    logger.info("Configuring TickConfigs with Gaussian jitter...")
+    logger.info("Configuring ScheduleConfigs with Gaussian jitter...")
 
     # Log test events if any
     if test_events:
@@ -174,8 +174,8 @@ def deploy_event_driven(
 
     # Run event-driven simulation
     logger.info(f"Running event-driven simulation for {t_end}s...")
-    event_analyzer = EventAnalyzer(verbose=False, track_data=True)
-    episode = env.run_event_driven(event_analyzer=event_analyzer, t_end=t_end)
+    episode_analyzer = EpisodeAnalyzer(verbose=False, track_data=True)
+    episode = env.run_event_driven(episode_analyzer=episode_analyzer, t_end=t_end)
 
     # Print summary
     summary = episode.summary()
@@ -188,7 +188,7 @@ def deploy_event_driven(
     logger.info(f"  Event types: {summary.get('event_counts', {})}")
     logger.info(f"  Message types: {summary.get('message_type_counts', {})}")
 
-    reward_history = event_analyzer.get_reward_history()
+    reward_history = episode_analyzer.get_reward_history()
     if reward_history:
         for agent_id, rewards in reward_history.items():
             if rewards:

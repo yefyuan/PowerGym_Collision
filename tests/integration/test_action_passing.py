@@ -18,7 +18,7 @@ from heron.agents.field_agent import FieldAgent
 from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.agents.system_agent import SystemAgent
 from heron.core.observation import Observation
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.action import Action
 from heron.core.policies import Policy, obs_to_vector, vector_to_action
 from heron.envs.base import HeronEnv
@@ -28,8 +28,8 @@ from heron.protocols.base import (
     ActionProtocol,
 )
 from heron.utils.typing import AgentID
-from heron.scheduling import TickConfig, JitterType
-from heron.scheduling.analysis import EventAnalyzer
+from heron.scheduling import ScheduleConfig, JitterType
+from heron.scheduling.analysis import EpisodeAnalyzer
 
 
 # =============================================================================
@@ -114,7 +114,7 @@ class ProportionalProtocol(Protocol):
 # =============================================================================
 
 @dataclass(slots=True)
-class DevicePowerFeature(FeatureProvider):
+class DevicePowerFeature(Feature):
     """Power state feature for devices."""
     visibility: ClassVar[Sequence[str]] = ["public"]
 
@@ -143,7 +143,7 @@ class DeviceAgent(FieldAgent):
     def capacity(self) -> float:
         return self.state.features["DevicePowerFeature"].capacity
 
-    def init_action(self, features: List[FeatureProvider] = []):
+    def init_action(self, features: List[Feature] = []):
         """Initialize action (power control)."""
         action = Action()
         action.set_specs(dim_c=1, range=(np.array([-1.0]), np.array([1.0])))
@@ -544,7 +544,7 @@ device_2 = DeviceAgent(
 
 # Configure tick timing BEFORE creating agents and environment
 # Using faster tick intervals to generate more events within active simulation period
-field_tick_config = TickConfig.with_jitter(
+field_schedule_config = ScheduleConfig.with_jitter(
     tick_interval=2.0,
     obs_delay=0.05,
     act_delay=0.1,
@@ -554,7 +554,7 @@ field_tick_config = TickConfig.with_jitter(
     seed=42
 )
 
-coordinator_tick_config = TickConfig.with_jitter(
+coordinator_schedule_config = ScheduleConfig.with_jitter(
     tick_interval=4.0,
     obs_delay=0.1,
     act_delay=0.15,
@@ -565,7 +565,7 @@ coordinator_tick_config = TickConfig.with_jitter(
     seed=43
 )
 
-system_tick_config = TickConfig.with_jitter(
+system_schedule_config = ScheduleConfig.with_jitter(
     tick_interval=8.0,
     obs_delay=0.15,
     act_delay=0.25,
@@ -577,8 +577,8 @@ system_tick_config = TickConfig.with_jitter(
 )
 
 # Set tick configs on agents BEFORE environment creation
-device_1.tick_config = field_tick_config
-device_2.tick_config = field_tick_config
+device_1.schedule_config = field_schedule_config
+device_2.schedule_config = field_schedule_config
 
 # Coordinator with VerticalProtocol (uses vector decomposition)
 # Coordinator computes joint action [a1, a2] and protocol splits it
@@ -588,14 +588,14 @@ vertical_protocol = VerticalProtocol()
 coordinator = ZoneCoordinator(
     agent_id="coordinator",
     subordinates={"device_1": device_1, "device_2": device_2},
-    tick_config=coordinator_tick_config,
+    schedule_config=coordinator_schedule_config,
     protocol=vertical_protocol,
 )
 
 system = GridSystem(
     agent_id="system_agent",
     subordinates={"coordinator": coordinator},
-    tick_config=system_tick_config,
+    schedule_config=system_schedule_config,
 )
 
 # Configure environment
@@ -662,37 +662,37 @@ print("="*80)
 print("Coordinator uses trained policy to compute actions")
 print("Protocol distributes actions to devices asynchronously\n")
 
-event_analyzer = EventAnalyzer(verbose=False, track_data=True)  # Disable verbose for clean output
-episode = env.run_event_driven(event_analyzer=event_analyzer, t_end=100.0)
+episode_analyzer = EpisodeAnalyzer(verbose=False, track_data=True)  # Disable verbose for clean output
+episode = env.run_event_driven(episode_analyzer=episode_analyzer, t_end=100.0)
 
 print(f"\n{'='*80}")
 print("Event-Driven Execution Statistics")
 print(f"{'='*80}")
 print(f"Simulation time: 0.0 → 100.0s")
 
-# EventAnalyzer statistics
+# EpisodeAnalyzer statistics
 print(f"\nEvent Counts:")
-print(f"  Observations requested: {event_analyzer.observation_count}")
-print(f"  Global state requests: {event_analyzer.global_state_count}")
-print(f"  Local state requests: {event_analyzer.local_state_count}")
-print(f"  State updates: {event_analyzer.state_update_count}")
-print(f"  Action results (rewards): {event_analyzer.action_result_count}")
+print(f"  Observations requested: {episode_analyzer.observation_count}")
+print(f"  Global state requests: {episode_analyzer.global_state_count}")
+print(f"  Local state requests: {episode_analyzer.local_state_count}")
+print(f"  State updates: {episode_analyzer.state_update_count}")
+print(f"  Action results (rewards): {episode_analyzer.action_result_count}")
 
 # Count agent ticks from internal timesteps
 print(f"\nAgent Tick Counts:")
 for agent in [device_1, device_2, coordinator, system]:
     if hasattr(agent, '_timestep'):
         if agent._timestep > 0:
-            estimated_ticks = int(agent._timestep / agent._tick_config.tick_interval)
+            estimated_ticks = int(agent._timestep / agent._schedule_config.tick_interval)
             print(f"  {agent.agent_id}: ~{estimated_ticks} ticks (final time: {agent._timestep:.1f}s)")
         else:
             print(f"  {agent.agent_id}: 0 ticks (not started or terminated early)")
 
 # Total activity metric
-total_activity = (event_analyzer.observation_count +
-                 event_analyzer.global_state_count +
-                 event_analyzer.local_state_count +
-                 event_analyzer.action_result_count)
+total_activity = (episode_analyzer.observation_count +
+                 episode_analyzer.global_state_count +
+                 episode_analyzer.local_state_count +
+                 episode_analyzer.action_result_count)
 actual_end_time = max(a._timestep for a in [device_1, device_2, coordinator] if hasattr(a, '_timestep') and a._timestep > 0)
 
 print(f"\nActivity Summary:")
@@ -701,11 +701,11 @@ print(f"  Actual simulation duration: ~{actual_end_time:.1f}s")
 print(f"  Average activity: {total_activity / actual_end_time:.2f} events/s")
 print(f"\n✓ Validation Status:")
 device_ticks = sum(1 for a in [device_1, device_2] if hasattr(a, '_timestep') and a._timestep > 0)
-coord_ticks = int(coordinator._timestep / coordinator._tick_config.tick_interval) if coordinator._timestep > 0 else 0
+coord_ticks = int(coordinator._timestep / coordinator._schedule_config.tick_interval) if coordinator._timestep > 0 else 0
 print(f"  - Coordinator computed and distributed {coord_ticks} joint actions")
 print(f"  - Devices received and applied {device_ticks * coord_ticks // 2} total actions")
 print(f"  - Vector decomposition verified {coord_ticks} times")
-print(f"  - {event_analyzer.action_result_count} rewards collected and computed")
+print(f"  - {episode_analyzer.action_result_count} rewards collected and computed")
 print(f"  → Sufficient activity to validate action passing mechanism!")
 
 # Extract and plot reward trends from event-driven execution
@@ -716,8 +716,8 @@ print(f"{'='*80}")
 # Extract reward data from event analyzer
 import matplotlib.pyplot as plt
 
-# Get reward history directly from EventAnalyzer (tracked via MSG_SET_TICK_RESULT)
-reward_history = event_analyzer.get_reward_history()
+# Get reward history directly from EpisodeAnalyzer (tracked via MSG_SET_TICK_RESULT)
+reward_history = episode_analyzer.get_reward_history()
 reward_data = {"coordinator": [], "device_1": [], "device_2": []}
 timestamps = {"coordinator": [], "device_1": [], "device_2": []}
 
@@ -788,5 +788,5 @@ print(f"  1. Coordinator owns neural policy and computes joint actions")
 print(f"  2. Protocol.coordinate() distributes actions to field agents")
 print(f"  3. Actions flow through hierarchy: System → Coordinator → Devices")
 print(f"  4. Event-driven execution with asynchronous timing and jitter")
-print(f"  5. Collected {event_analyzer.action_result_count} rewards across agents")
+print(f"  5. Collected {episode_analyzer.action_result_count} rewards across agents")
 print()

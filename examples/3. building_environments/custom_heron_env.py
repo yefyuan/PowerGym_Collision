@@ -34,7 +34,7 @@ import numpy as np
 from heron.agents.field_agent import FieldAgent
 from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.core.action import Action
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.envs.base import HeronEnv
 from heron.agents.constants import FIELD_LEVEL
 
@@ -44,7 +44,7 @@ from heron.agents.constants import FIELD_LEVEL
 # ---------------------------------------------------------------------------
 
 @dataclass(slots=True)
-class WaterLevelFeature(FeatureProvider):
+class WaterLevelFeature(Feature):
     """Tank water level (public so coordinator can monitor all tanks)."""
     visibility: ClassVar[Sequence[str]] = ["public"]
     level: float = 50.0         # current level (0-100)
@@ -54,7 +54,7 @@ class WaterLevelFeature(FeatureProvider):
 class PumpAgent(FieldAgent):
     """Pump that controls water inflow rate into a tank."""
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         action = Action()
         # Pump rate: -1 (drain) to +1 (fill)
         action.set_specs(dim_c=1, range=(np.array([-1.0]), np.array([1.0])))

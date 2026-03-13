@@ -12,11 +12,11 @@ import numpy as np
 from heron.agents.base import Agent
 from heron.agents.field_agent import FieldAgent
 from heron.core.action import Action
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.policies import Policy
 from heron.protocols.base import Protocol
 from heron.scheduling.scheduler import Event, EventScheduler
-from heron.scheduling.tick_config import TickConfig
+from heron.scheduling.tick_config import ScheduleConfig
 from heron.utils.typing import AgentID
 
 from case_studies.power.ev_public_charging_case.features import ChargerFeature, EVSlotFeature
@@ -40,13 +40,13 @@ class ChargingSlot(FieldAgent):
         p_max_kw: float = 150.0,
         upstream_id: Optional[AgentID] = None,
         env_id: Optional[str] = None,
-        tick_config: Optional[TickConfig] = None,
+        schedule_config: Optional[ScheduleConfig] = None,
         policy: Optional[Policy] = None,
         protocol: Optional[Protocol] = None,
     ):
         self._p_max_kw = p_max_kw
 
-        features: List[FeatureProvider] = [
+        features: List[Feature] = [
             ChargerFeature(p_max_kw=p_max_kw),
             EVSlotFeature(),
         ]
@@ -56,12 +56,12 @@ class ChargingSlot(FieldAgent):
             features=features,
             upstream_id=upstream_id,
             env_id=env_id,
-            tick_config=tick_config,
+            schedule_config=schedule_config,
             policy=policy,
             protocol=protocol,
         )
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         action = Action()
         action.set_specs(
             dim_c=1,

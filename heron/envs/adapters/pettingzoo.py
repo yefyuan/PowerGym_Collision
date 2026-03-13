@@ -4,7 +4,7 @@ PettingZoo adapter for HERON environments.
 
 Compatibility: Ray 2.40+ / 3.0 with PettingZoo 1.24+
 
-This adapter provides a composition-based wrapper around HeronEnvCore to expose
+This adapter provides a composition-based wrapper around HeronBaseEnv to expose
 the PettingZoo ParallelEnv interface. It is designed to work seamlessly with
 Ray RLlib's ParallelPettingZooEnv wrapper for multi-agent training.
 """
@@ -15,7 +15,7 @@ from typing import Dict, List, Optional, Tuple, Any
 import gymnasium as gym
 import numpy as np
 
-from heron.envs.base import HeronEnvCore, AgentID
+from heron.envs.base import HeronBaseEnv, AgentID
 from heron.messaging.base import MessageBroker
 
 # PettingZoo is an optional dependency
@@ -85,7 +85,7 @@ class PettingZooParallelEnv(ParallelEnv):  # type: ignore[misc]
         ParallelEnv.__init__(self)
 
         # Create & init HERON core (mixin-style core; must call _init_heron_core)
-        self.core = HeronEnvCore()
+        self.core = HeronBaseEnv()
         self.core._init_heron_core(env_id=env_id, message_broker=message_broker)
 
         # PettingZoo required fields

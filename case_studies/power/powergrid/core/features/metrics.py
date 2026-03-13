@@ -5,11 +5,11 @@ from typing import ClassVar, List, Sequence
 
 import numpy as np
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 
 
 @dataclass(slots=True)
-class CostSafetyMetrics(FeatureProvider):
+class CostSafetyMetrics(Feature):
     """Provider for cost and safety tracking.
 
     Used by device agents to track operating costs and safety violations.

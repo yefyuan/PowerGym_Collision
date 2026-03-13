@@ -68,7 +68,7 @@ class HeronEnvRunner(MultiAgentEnvRunner):
 
         Args:
             t_end: Simulation end time per episode.
-            seed: Base seed for TickConfig jitter.
+            seed: Base seed for ScheduleConfig jitter.
         """
         from ray.rllib.algorithms.algorithm_config import AlgorithmConfig
 
@@ -121,13 +121,13 @@ class HeronEnvRunner(MultiAgentEnvRunner):
     ) -> List[MultiAgentEpisode]:
         """Run event-driven HERON simulation and return MultiAgentEpisodes.
 
-        Builds one HERON env (tick_config is applied at construction from
+        Builds one HERON env (schedule_config is applied at construction from
         env_config), bridges the runner's trained RLModules to HERON
         policies, then reuses the env across episodes.  Only jitter RNG
         seeds change per episode via ``reset(jitter_seed=...)``.
         """
         from heron.adaptors.rllib import _build_heron_env
-        from heron.scheduling.analysis import EventAnalyzer
+        from heron.scheduling.analysis import EpisodeAnalyzer
 
         env_config = self.config.env_config
         t_end = env_config.get("eval_t_end", 100.0)
@@ -136,7 +136,7 @@ class HeronEnvRunner(MultiAgentEnvRunner):
         # Agent IDs visible to RLlib (from the RLlibBasedHeronEnv wrapper)
         rllib_agent_ids = list(self.env.unwrapped.possible_agents)
 
-        # Build env once; tick_config from env_config is applied at construction.
+        # Build env once; schedule_config from env_config is applied at construction.
         # Bridge policies (stable across episodes).
         heron_env = _build_heron_env(env_config)
         policies = self._bridge_modules_to_policies(heron_env)
@@ -145,15 +145,15 @@ class HeronEnvRunner(MultiAgentEnvRunner):
         episodes: List[MultiAgentEpisode] = []
 
         for ep_idx in range(num_episodes):
-            # Reset with per-episode jitter seed (tick_config set at construction)
+            # Reset with per-episode jitter seed (schedule_config set at construction)
             ep_seed = seed + ep_idx
             heron_env.reset(seed=ep_seed, jitter_seed=ep_seed)
-            analyzer = EventAnalyzer(verbose=False, track_data=True)
-            episode_result = heron_env.run_event_driven(analyzer, t_end=t_end)
+            analyzer = EpisodeAnalyzer(verbose=False, track_data=True)
+            episode_stats = heron_env.run_event_driven(analyzer, t_end=t_end)
 
             # 3. Build MultiAgentEpisode from reward history
             reward_history = analyzer.get_reward_history()
-            summary = episode_result.summary()
+            summary = episode_stats.summary()
 
             ma_episode = self._build_episode_from_event_driven(
                 reward_history=reward_history,

@@ -34,7 +34,7 @@ from ray.rllib.policy.policy import PolicySpec
 
 from heron.adaptors.rllib import RLlibBasedHeronEnv
 from heron.adaptors.rllib_runner import HeronEnvRunner
-from heron.scheduling import TickConfig, JitterType
+from heron.scheduling import ScheduleConfig, JitterType
 
 def main():
 
@@ -59,7 +59,7 @@ def main():
                             "agent_id": f"drone_{f}_{d}", 
                             "agent_cls": TransportDrone,
                             "features": [DronePositionFeature(y_pos=0.2 + 0.3 * d)],
-                            # Optional per-agent tick config with jitter (overrides DEFAULT_FIELD_AGENT_TICK_CONFIG)
+                            # Optional per-agent tick config with jitter (overrides DEFAULT_FIELD_AGENT_SCHEDULE_CONFIG)
                             "coordinator": f"fleet_{f}"
                         }
                         for f in range(2) for d in range(NUM_DRONES_PER_FLEET)
@@ -68,7 +68,7 @@ def main():
                         {
                             "coordinator_id": f"fleet_{f}", 
                             "agent_cls": TransportCoordinator,
-                            # Optional per-coordinator tick config with jitter (overrides DEFAULT_COORDINATOR_AGENT_TICK_CONFIG)
+                            # Optional per-coordinator tick config with jitter (overrides DEFAULT_COORDINATOR_AGENT_SCHEDULE_CONFIG)
                         }
                         for f in range(2)
                     ],

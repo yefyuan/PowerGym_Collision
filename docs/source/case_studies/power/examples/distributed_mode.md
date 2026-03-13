@@ -5,7 +5,7 @@ This example demonstrates distributed execution mode where agents communicate vi
 ## What You'll Learn
 
 - Setting up distributed execution mode
-- Using ProxyAgent for message-based coordination
+- Using Proxy for message-based coordination
 - Implementing realistic communication patterns
 
 ## Architecture
@@ -33,7 +33,7 @@ This example demonstrates distributed execution mode where agents communicate vi
 
 ```python
 from heron.messaging.memory import InMemoryBroker
-from heron.agents import ProxyAgent
+from heron.agents import Proxy
 from powergrid.envs import MultiAgentMicrogrids
 
 # Create message broker
@@ -51,16 +51,16 @@ env = MultiAgentMicrogrids(env_config)
 
 ## Proxy Agent Setup
 
-ProxyAgent wraps actual agents for message-based communication:
+Proxy wraps actual agents for message-based communication:
 
 ```python
-from heron.agents import ProxyAgent
+from heron.agents import Proxy
 from heron.messaging.memory import InMemoryBroker
 
 broker = InMemoryBroker()
 
 # Create proxy for each grid agent
-proxy = ProxyAgent(
+proxy = Proxy(
     agent_id="mg1_proxy",
     actual_agent=grid_agent,
     broker=broker,

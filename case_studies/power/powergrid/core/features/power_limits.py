@@ -3,13 +3,13 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from powergrid.utils.phase import PhaseModel, PhaseSpec
 from heron.utils.array_utils import cat_f32
 
 
 @dataclass(slots=True)
-class PowerLimits(FeatureProvider):
+class PowerLimits(Feature):
     """
     Generator capability / constraints.
 
@@ -99,7 +99,7 @@ class PowerLimits(FeatureProvider):
         return np.sqrt(max(1.0 / (pf * pf) - 1.0, 0.0))
 
     # ------------------------------------------------------------
-    # FeatureProvider API
+    # Feature API
     # ------------------------------------------------------------
 
     def reset(self, *, derate_frac: float = 1.0) -> None:

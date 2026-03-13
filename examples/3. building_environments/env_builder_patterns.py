@@ -26,9 +26,9 @@ import numpy as np
 
 from heron.agents.field_agent import FieldAgent
 from heron.core.action import Action
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.envs.builder import EnvBuilder
-from heron.scheduling.tick_config import TickConfig
+from heron.scheduling.tick_config import ScheduleConfig
 
 
 # ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ from heron.scheduling.tick_config import TickConfig
 # ---------------------------------------------------------------------------
 
 @dataclass(slots=True)
-class SensorReading(FeatureProvider):
+class SensorReading(Feature):
     """A sensor's current reading and calibration offset."""
     visibility: ClassVar[Sequence[str]] = ["public"]
     value: float = 0.0
@@ -46,7 +46,7 @@ class SensorReading(FeatureProvider):
 class SensorAgent(FieldAgent):
     """Sensor that adjusts its calibration offset."""
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         action = Action()
         # Action: calibration adjustment in [-0.5, 0.5]
         action.set_specs(dim_c=1, range=(np.array([-0.5]), np.array([0.5])))
@@ -189,14 +189,14 @@ def main():
     env4 = (
         EnvBuilder("custom_system")
         .add_agents("s", SensorAgent, count=2, features=[SensorReading()])
-        .add_system_agent(tick_config=TickConfig.deterministic(tick_interval=5.0))
+        .add_system_agent(schedule_config=ScheduleConfig.deterministic(tick_interval=5.0))
         .simulation(sensor_simulation)
         .build()
     )
 
     obs4, _ = env4.reset(seed=3)
     system_agent = env4.registered_agents.get("system_agent")
-    print(f"System agent tick interval: {system_agent.tick_config.tick_interval}s")
+    print(f"System agent tick interval: {system_agent.schedule_config.tick_interval}s")
     print(f"Agents: {list(obs4.keys())}")
 
     print("\nDone.")

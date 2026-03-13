@@ -1,9 +1,9 @@
 """Multi-station EV charging environment using HERON HeronEnv.
 
 Follows the same pattern as powergrid/envs/hierarchical_microgrid_env.py:
-- Extends HeronEnv (which extends EnvCore)
+- Extends HeronEnv (which extends BaseEnv)
 - Implements the 3 abstract simulation methods
-- Receives coordinator_agents, EnvCore auto-creates SystemAgent
+- Receives coordinator_agents, BaseEnv auto-creates SystemAgent
 - CTDE training via system_agent.execute() → layer_actions → act → simulate
 """
 
@@ -104,7 +104,7 @@ class ChargingEnv(HeronEnv):
         return obs, rewards, terminated, truncated, infos
 
     # ============================================
-    # Abstract simulation methods (required by EnvCore)
+    # Abstract simulation methods (required by BaseEnv)
     # ============================================
 
     def pre_step(self) -> None:

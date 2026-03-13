@@ -5,11 +5,11 @@ from typing import Any, ClassVar, Sequence
 
 import numpy as np
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 
 
 @dataclass(slots=True)
-class DronePositionFeature(FeatureProvider):
+class DronePositionFeature(Feature):
     """Drone position on the warehouse floor (normalized to [0,1])."""
     visibility: ClassVar[Sequence[str]] = ["public"]
     x_pos: float = 0.5
@@ -23,7 +23,7 @@ class DronePositionFeature(FeatureProvider):
 
 
 @dataclass(slots=True)
-class FleetSafetyFeature(FeatureProvider):
+class FleetSafetyFeature(Feature):
     """Fleet-level aggregate: separation and delivery progress."""
     visibility: ClassVar[Sequence[str]] = ["public"]
     mean_separation: float = 0.5

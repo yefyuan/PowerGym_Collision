@@ -27,7 +27,7 @@ import numpy as np
 from heron.agents.field_agent import FieldAgent
 from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.core.action import Action
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.envs.simple import SimpleEnv
 from heron.protocols.vertical import (
     VerticalProtocol,
@@ -41,7 +41,7 @@ from heron.protocols.vertical import (
 # ---------------------------------------------------------------------------
 
 @dataclass(slots=True)
-class GeneratorFeature(FeatureProvider):
+class GeneratorFeature(Feature):
     """Generator power output and capacity."""
     visibility: ClassVar[Sequence[str]] = ["public"]
     power: float = 0.0          # current output (MW)
@@ -51,7 +51,7 @@ class GeneratorFeature(FeatureProvider):
 class Generator(FieldAgent):
     """Generator that receives power setpoints from a grid operator."""
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         action = Action()
         action.set_specs(dim_c=1, range=(np.array([-1.0]), np.array([1.0])))
         return action

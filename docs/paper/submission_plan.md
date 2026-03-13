@@ -19,13 +19,13 @@
 | Component | Status | Details |
 |-----------|--------|---------|
 | Agent hierarchy (3 levels) | ✅ Done | FieldAgent, CoordinatorAgent, SystemAgent |
-| ProxyAgent (state mediation) | ✅ Done | Centralized state management, visibility filtering |
+| Proxy (state mediation) | ✅ Done | Centralized state management, visibility filtering |
 | EventScheduler | ✅ Done | Heap-based priority queue, 7 event types, configurable delays/jitter |
 | Dual execution modes | ✅ Done | `step()` (sync) + `run_event_driven()` (event-driven) |
 | MessageBroker | ✅ Done | InMemoryBroker, channel-based, 6 message types |
-| FeatureProvider system | ✅ Done | FeatureMeta metaclass, 4 visibility scopes |
+| Feature system | ✅ Done | FeatureMeta metaclass, 4 visibility scopes |
 | Protocol base classes | ✅ Done | VerticalProtocol (VectorDecomposition), HorizontalProtocol (StateShare) |
-| Power domain: 20 FeatureProviders | ✅ Done | But only 6/20 have visibility labels implemented |
+| Power domain: 20 Features | ✅ Done | But only 6/20 have visibility labels implemented |
 | Power domain: 6 agent types | ✅ Done | DeviceAgent, Generator, ESS, Transformer, PowerGridAgent, GridSystemAgent |
 | Power domain: 6 test networks | ✅ Done | IEEE 13/34/123, CIGRE LV, Case34 3ph, Case LVMG |
 | Power domain: 7 tutorials | ✅ Done | Jupyter notebooks |
@@ -34,7 +34,7 @@
 
 | Component | Status | Risk |
 |-----------|--------|------|
-| Visibility labels on 14/20 power FeatureProviders | ❌ TODO | Low (straightforward) |
+| Visibility labels on 14/20 power Features | ❌ TODO | Low (straightforward) |
 | Domain-specific protocols (power) | ❌ TODO | Medium (setpoint, price signal, P2P, consensus) |
 | Traffic domain (entire) | ❌ TODO | **HIGH** (0% complete, 0 lines of code) |
 | MAPPO/IPPO via RLlib | ❌ TODO | Medium (no RL integration yet) |
@@ -47,7 +47,7 @@
 
 ### Honest Summary
 
-The **framework core is solid** (agents, proxy, scheduler, broker, protocols, features). The **power domain has good coverage** (20 FeatureProviders, 6 networks, 6 agent types). The major gaps are: (1) traffic domain is 0% complete, (2) no RL algorithm integration, (3) no experiments can run.
+The **framework core is solid** (agents, proxy, scheduler, broker, protocols, features). The **power domain has good coverage** (20 Features, 6 networks, 6 agent types). The major gaps are: (1) traffic domain is 0% complete, (2) no RL algorithm integration, (3) no experiments can run.
 
 ---
 
@@ -57,11 +57,11 @@ The **framework core is solid** (agents, proxy, scheduler, broker, protocols, fe
 
 | Section | Pages | Content |
 |---------|-------|---------|
-| 1. Introduction | 1.3 | Simulation mismatch problem, 3 dimensions (execution, info, protocols), key idea (ProxyAgent-mediated hierarchy), 6 contributions |
+| 1. Introduction | 1.3 | Simulation mismatch problem, 3 dimensions (execution, info, protocols), key idea (Proxy-mediated hierarchy), 6 contributions |
 | 2. Related Work | 0.5 | Multi-agent benchmarks (PettingZoo, EPyMARL, MARLlib), hierarchical RL, CPS-domain benchmarks. Comparison table (7 frameworks) |
-| 3. Framework | 3.0 | 3.1 Overview, 3.2 Agent hierarchy + dual modes + Algorithm 1, 3.3 ProxyAgent, 3.4 FeatureProviders, 3.5 MessageBroker, 3.6 Protocols |
-| 4. Power Case Study | 0.8 | 20 FeatureProviders (categorized table), 3-level agent hierarchy, 6 test networks, benchmark questions |
-| 5. Traffic Case Study | 0.5 | Agent mapping, cross-domain reuse evidence, 14 FeatureProviders |
+| 3. Framework | 3.0 | 3.1 Overview, 3.2 Agent hierarchy + dual modes + Algorithm 1, 3.3 Proxy, 3.4 Features, 3.5 MessageBroker, 3.6 Protocols |
+| 4. Power Case Study | 0.8 | 20 Features (categorized table), 3-level agent hierarchy, 6 test networks, benchmark questions |
+| 5. Traffic Case Study | 0.5 | Agent mapping, cross-domain reuse evidence, 14 Features |
 | 6. Experiments | 1.8 | 5 categories: observability ablation, sim-to-real gap, protocol comparison, timing sensitivity, algorithm comparison |
 | 7. Conclusion | 0.1 | Brief summary |
 
@@ -69,9 +69,9 @@ The **framework core is solid** (agents, proxy, scheduler, broker, protocols, fe
 
 | Section | Content |
 |---------|---------|
-| A. API Reference | Full method signatures (BaseEnv, BaseAgent, ProxyAgent, Protocol, EventScheduler) |
+| A. API Reference | Full method signatures (BaseEnv, BaseAgent, Proxy, Protocol, EventScheduler) |
 | B. Event-Driven Flow | Detailed sequence diagram of a full tick cycle |
-| C. FeatureProvider Specs | All 20 power + 14 traffic providers with dimensions and visibility |
+| C. Feature Specs | All 20 power + 14 traffic providers with dimensions and visibility |
 | D. Full Experiments | Complete results across all networks and domains |
 | E. Framework Comparison | LOC comparison, PettingZoo/EPyMARL implementation attempts |
 | F. Network Specs | All test network parameters |
@@ -87,8 +87,8 @@ The **framework core is solid** (agents, proxy, scheduler, broker, protocols, fe
 | # | Contribution | What Makes It Novel | Key Evidence |
 |---|-------------|--------------------|--------------|
 | 1 | **Event-driven hierarchical execution** | Dual modes (sync training + event-driven validation) via heap-based EventScheduler. Cannot be achieved by wrapping PettingZoo. | Algorithm 1, timing sensitivity experiments |
-| 2 | **ProxyAgent for state mediation** | All state access goes through a single gatekeeper that enforces visibility. Prevents the common "global state leak" in MARL benchmarks. | ProxyAgent API, sim-to-real gap experiments |
-| 3 | **FeatureProviders with visibility labels** | 4-level visibility (public/owner/upper_level/system) as first-class experimental variable, not a binary on/off. | Observability ablation experiments |
+| 2 | **Proxy for state mediation** | All state access goes through a single gatekeeper that enforces visibility. Prevents the common "global state leak" in MARL benchmarks. | Proxy API, sim-to-real gap experiments |
+| 3 | **Features with visibility labels** | 4-level visibility (public/owner/upper_level/system) as first-class experimental variable, not a binary on/off. | Observability ablation experiments |
 | 4 | **MessageBroker + channel isolation** | Explicit message-based communication with typed channels, environment isolation for parallel training. | Channel naming, message types |
 | 5 | **Composable protocol system** | CommunicationProtocol + ActionProtocol composition. Swap coordination mechanisms without changing agents. | Protocol comparison experiments |
 
@@ -151,7 +151,7 @@ These must show **consistent relative ordering** across both domains to validate
 
 ### Phase 1: Complete Power Domain (Week 1-2)
 
-- [ ] Add visibility labels to remaining 14/20 FeatureProviders
+- [ ] Add visibility labels to remaining 14/20 Features
 - [ ] Implement 4 domain-specific protocols:
   - [ ] SetpointProtocol (vertical, centralized dispatch)
   - [ ] PriceSignalProtocol (vertical, decentralized response)
@@ -165,7 +165,7 @@ These must show **consistent relative ordering** across both domains to validate
 This is the **highest risk item**. Entire domain is 0% complete.
 
 - [ ] Choose physics backend (SUMO via TraCI, or simplified model)
-- [ ] Implement 14 FeatureProviders (5 owner, 3 upper_level, 4 system, 2 public)
+- [ ] Implement 14 Features (5 owner, 3 upper_level, 4 system, 2 public)
 - [ ] Implement 4 traffic protocols (FixedTiming, AdaptiveOffset, GreenWave, ConsensusTiming)
 - [ ] Create 5x5 grid network (25 intersections)
 - [ ] Implement 3 agent types: SignalAgent, CorridorAgent, NetworkAgent
@@ -197,7 +197,7 @@ This is the **highest risk item**. Entire domain is 0% complete.
 
 ### Must Have (ALL required)
 
-- [ ] Traffic domain parity: 14 FeatureProviders, 4 protocols, 25 agents
+- [ ] Traffic domain parity: 14 Features, 4 protocols, 25 agents
 - [ ] 4 algorithms tested (MAPPO, IPPO, QMIX, TarMAC)
 - [ ] Consistent visibility ordering (system > upper > owner) across both domains
 - [ ] Event-driven timing calibrated to IEEE 2030 / NTCIP 1202
@@ -208,7 +208,7 @@ This is the **highest risk item**. Entire domain is 0% complete.
 
 ### Do NOT Submit If
 
-- Traffic domain has fewer FeatureProviders or protocols than power
+- Traffic domain has fewer Features or protocols than power
 - Only 2 algorithms tested
 - Event-driven not calibrated to real CPS timing standards
 - Scalability only tested up to 500 agents
@@ -232,7 +232,7 @@ This is the **highest risk item**. Entire domain is 0% complete.
 
 | Framework | Abstraction Level | Event-Driven | Visibility | Protocols | State Mediation | CPS Focus |
 |-----------|-------------------|-------------|-----------|-----------|-----------------|-----------|
-| **HERON** | Internal env structure | Native | 4-level | Composable | ProxyAgent | Yes |
+| **HERON** | Internal env structure | Native | 4-level | Composable | Proxy | Yes |
 | PettingZoo | Env-algorithm interface | No | Manual | No | No | No |
 | EPyMARL | Algorithm benchmarking | No | No | No | No | No |
 | MARLlib | Algorithm library | No | No | No | No | No |
@@ -290,7 +290,7 @@ This is the **highest risk item**. Entire domain is 0% complete.
 | 2 (Coordinator) | Squad Leader | Every ~5s | Squad area + neighbor summary | Group positioning, engagement calls |
 | 1 (Field) | Unit | Every ~0.5s | Local radius only | Movement, ability usage, combat micro |
 
-**Information flow via ProxyAgent:**
+**Information flow via Proxy:**
 - Units see only local radius (owner visibility)
 - Squad leaders see their squad's states + neighbor summaries (upper_level visibility)
 - Strategist sees full map but with observation delay (system visibility)
@@ -312,7 +312,7 @@ This is the **highest risk item**. Entire domain is 0% complete.
 
 **Implementation scope:**
 - [ ] Wrap an existing SMAC/MPE environment with HERON agents (reuse FieldAgent, CoordinatorAgent, SystemAgent)
-- [ ] Implement 3-4 game FeatureProviders (LocalVision, SquadState, MapOverview, ResourceStatus)
+- [ ] Implement 3-4 game Features (LocalVision, SquadState, MapOverview, ResourceStatus)
 - [ ] Implement 2 protocols (OrderProtocol, ScoutShareProtocol)
 - [ ] Run sync vs. event-driven comparison (1 experiment)
 - [ ] Write 2-3 page appendix section

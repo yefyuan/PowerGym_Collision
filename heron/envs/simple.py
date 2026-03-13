@@ -53,7 +53,7 @@ class SimpleEnv(HeronEnv):
     Parameters
     ----------
     coordinator_agents : list[CoordinatorAgent], optional
-        Coordinator agents (EnvCore auto-creates a SystemAgent).
+        Coordinator agents (BaseEnv auto-creates a SystemAgent).
     system_agent : SystemAgent, optional
         Explicit system agent (mutually exclusive with *coordinator_agents*).
     simulation_func : callable, optional

@@ -28,7 +28,7 @@ import numpy as np
 from heron.agents.field_agent import FieldAgent
 from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.core.action import Action
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.envs.simple import SimpleEnv
 from heron.protocols.base import (
     Protocol,
@@ -180,7 +180,7 @@ class WaterDispatchProtocol(Protocol):
 # ---------------------------------------------------------------------------
 
 @dataclass(slots=True)
-class WaterLevelFeature(FeatureProvider):
+class WaterLevelFeature(Feature):
     """District water level."""
     visibility: ClassVar[Sequence[str]] = ["public"]
     level: float = 50.0         # current level (0-100)
@@ -190,7 +190,7 @@ class WaterLevelFeature(FeatureProvider):
 class DistrictAgent(FieldAgent):
     """District that consumes water and receives supply from dispatcher."""
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         action = Action()
         # Inflow rate [-1, 1], mapped to [0, 10] units
         action.set_specs(dim_c=1, range=(np.array([-1.0]), np.array([1.0])))

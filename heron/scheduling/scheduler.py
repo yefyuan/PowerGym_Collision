@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 from heron.scheduling.event import Event, EventType
 from heron.utils.typing import AgentID
-from heron.scheduling.tick_config import TickConfig
+from heron.scheduling.tick_config import ScheduleConfig
 from heron.agents.constants import SYSTEM_AGENT_ID
 
 
@@ -16,8 +16,8 @@ class EventScheduler:
         self.event_queue: List[Event] = []
         self._sequence_counter: int = 0
 
-        # Agent configuration - TickConfig storage
-        self._agent_tick_configs: Dict[AgentID, "TickConfig"] = {}
+        # Agent configuration - ScheduleConfig storage
+        self._agent_schedule_configs: Dict[AgentID, "ScheduleConfig"] = {}
 
         self.handlers: Dict[AgentID, Dict[EventType, Callable[[Event, "EventScheduler"], None]]] = {}
 
@@ -31,27 +31,27 @@ class EventScheduler:
     @staticmethod
     def init(config: Optional[Dict[str, Any]] = None) -> "EventScheduler":
         if not config:
-            return DefaultScheduler()
+            return EventScheduler(start_time=0.0)
 
         start_time = config.get("start_time", 0.0)
         return EventScheduler(start_time)
 
     @property
-    def agent_tick_configs(self) -> Dict[AgentID, "TickConfig"]:
+    def agent_schedule_configs(self) -> Dict[AgentID, "ScheduleConfig"]:
         """Get the tick configs for all agents."""
-        return self._agent_tick_configs
+        return self._agent_schedule_configs
     
     def attach(self, agents: Dict[AgentID, "Agent"]) -> None:
         """Register agents with the scheduler and schedule the initial system tick.
 
-        Stores each agent's TickConfig, marks them as active, registers their
+        Stores each agent's ScheduleConfig, marks them as active, registers their
         event handlers, and schedules the first AGENT_TICK for the system agent.
 
         Args:
             agents: Dict mapping agent IDs to Agent instances
         """
         for agent_id, agent in agents.items():
-            self._agent_tick_configs[agent_id] = agent.tick_config
+            self._agent_schedule_configs[agent_id] = agent.schedule_config
             self._active_agents.add(agent_id)
             self.set_handlers_for_agent(agent_id, agent.get_handlers())
             if agent_id == SYSTEM_AGENT_ID:
@@ -85,7 +85,7 @@ class EventScheduler:
     ) -> None:
         """Schedule an agent tick event.
 
-        Uses jittered interval from TickConfig if available.
+        Uses jittered interval from ScheduleConfig if available.
 
         Args:
             agent_id: Agent to tick
@@ -109,7 +109,7 @@ class EventScheduler:
     ) -> None:
         """Schedule a delayed action effect.
 
-        Uses jittered delay from TickConfig if available.
+        Uses jittered delay from ScheduleConfig if available.
 
         Args:
             agent_id: Agent whose action this is
@@ -134,7 +134,7 @@ class EventScheduler:
     ) -> None:
         """Schedule a delayed message delivery.
 
-        Uses jittered delay from sender's TickConfig if delay not provided.
+        Uses jittered delay from sender's ScheduleConfig if delay not provided.
 
         Args:
             sender_id: Sending agent
@@ -181,7 +181,7 @@ class EventScheduler:
         Returns:
             Observation delay (jittered if config has jitter enabled)
         """
-        config = self._agent_tick_configs.get(agent_id)
+        config = self._agent_schedule_configs.get(agent_id)
         if config:
             return config.get_obs_delay()
         return 0.0
@@ -195,7 +195,7 @@ class EventScheduler:
         Returns:
             Action delay (jittered if config has jitter enabled)
         """
-        config = self._agent_tick_configs.get(agent_id)
+        config = self._agent_schedule_configs.get(agent_id)
         if config:
             return config.get_act_delay()
         return 0.0
@@ -209,7 +209,7 @@ class EventScheduler:
         Returns:
             Message delay (jittered if config has jitter enabled)
         """
-        config = self._agent_tick_configs.get(agent_id)
+        config = self._agent_schedule_configs.get(agent_id)
         if config:
             return config.get_msg_delay()
         return 0.0
@@ -223,7 +223,7 @@ class EventScheduler:
         Returns:
             Tick interval (jittered if config has jitter enabled)
         """
-        config = self._agent_tick_configs.get(agent_id)
+        config = self._agent_schedule_configs.get(agent_id)
         if config:
             return config.get_tick_interval()
         return 1.0
@@ -371,7 +371,7 @@ class EventScheduler:
         self.event_queue.clear()
         self._sequence_counter = 0
 
-    def sync_tick_configs(self, agents: Dict[AgentID, "Agent"]) -> None:
+    def sync_schedule_configs(self, agents: Dict[AgentID, "Agent"]) -> None:
         """Re-sync cached tick configs from agents.
 
         Call this after modifying agents' tick configs (e.g. changing
@@ -383,7 +383,7 @@ class EventScheduler:
         """
         for agent_id, agent in agents.items():
             if agent_id in self._active_agents:
-                self._agent_tick_configs[agent_id] = agent.tick_config
+                self._agent_schedule_configs[agent_id] = agent.schedule_config
 
     def reset(self, start_time: float = 0.0) -> None:
         """Reset scheduler to initial state.
@@ -426,30 +426,3 @@ class EventScheduler:
         )
 
 
-class DefaultScheduler(EventScheduler):
-    """Default scheduler with sensible defaults for synchronous training mode.
-
-    This scheduler provides a minimal configuration suitable for synchronous
-    step-based execution (Option A - Training) where event-driven scheduling
-    is not required. It uses zero-delay settings and a tick interval of 1.0.
-
-    For event-driven execution with timing delays (Option B - Testing),
-    use EventScheduler directly with explicit timing configuration.
-
-    Example:
-        # Simple usage for training
-        scheduler = DefaultScheduler()
-
-        # Equivalent to:
-        scheduler = EventScheduler(start_time=0.0)
-    """
-
-    def __init__(self) -> None:
-        """Initialize with default settings (start_time=0.0)."""
-        super().__init__(start_time=0.0)
-
-    def __repr__(self) -> str:
-        return (
-            f"DefaultScheduler(t={self.current_time:.3f}, "
-            f"pending={self.pending_count}, agents={len(self._active_agents)})"
-        )

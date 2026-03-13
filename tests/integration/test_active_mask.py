@@ -12,11 +12,11 @@ from typing import Any, ClassVar, Dict, List, Optional, Sequence
 from heron.agents.field_agent import FieldAgent
 from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.agents.system_agent import SystemAgent
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.action import Action
 from heron.envs.base import HeronEnv
 from heron.protocols.vertical import VerticalProtocol
-from heron.scheduling.tick_config import TickConfig
+from heron.scheduling.tick_config import ScheduleConfig
 from heron.utils.typing import AgentID
 
 
@@ -25,7 +25,7 @@ from heron.utils.typing import AgentID
 # =============================================================================
 
 @dataclass(slots=True)
-class CounterFeature(FeatureProvider):
+class CounterFeature(Feature):
     """Simple feature that tracks how many times apply_action was called."""
     visibility: ClassVar[Sequence[str]] = ["public"]
     value: float = 0.0
@@ -44,7 +44,7 @@ class CounterFeature(FeatureProvider):
 class CountingAgent(FieldAgent):
     """Field agent that counts apply_action calls for testing."""
 
-    def init_action(self, features: List[FeatureProvider] = []):
+    def init_action(self, features: List[Feature] = []):
         action = Action()
         action.set_specs(dim_c=1, range=(np.array([-1.0]), np.array([1.0])))
         action.set_values(np.array([0.0]))
@@ -70,7 +70,7 @@ class CountingAgent(FieldAgent):
 class MaskedAgent(CountingAgent):
     """Agent that provides an action mask (3 discrete actions, mask 2nd)."""
 
-    def init_action(self, features: List[FeatureProvider] = []):
+    def init_action(self, features: List[Feature] = []):
         action = Action()
         action.set_specs(dim_d=1, ncats=[3])
         return action
@@ -119,12 +119,12 @@ def _build_env(
     fast_agent = fast_agent_cls(
         agent_id="fast",
         features=[CounterFeature()],
-        tick_config=TickConfig.deterministic(tick_interval=fast_tick),
+        schedule_config=ScheduleConfig.deterministic(tick_interval=fast_tick),
     )
     slow_agent = CountingAgent(
         agent_id="slow",
         features=[CounterFeature()],
-        tick_config=TickConfig.deterministic(tick_interval=slow_tick),
+        schedule_config=ScheduleConfig.deterministic(tick_interval=slow_tick),
     )
     coordinator = SimpleCoordinator(
         agent_id="coord",

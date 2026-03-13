@@ -10,11 +10,11 @@ import numpy as np
 from gymnasium.spaces import Box
 
 from heron.agents.coordinator_agent import CoordinatorAgent
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.policies import Policy
 from heron.protocols.base import Protocol
 from heron.protocols.vertical import BroadcastActionProtocol, VerticalProtocol
-from heron.scheduling.tick_config import TickConfig
+from heron.scheduling.tick_config import ScheduleConfig
 from heron.utils.typing import AgentID
 
 from case_studies.power.ev_public_charging_case.features import ChargingStationFeature, MarketFeature, RegulationFeature
@@ -33,10 +33,10 @@ class StationCoordinator(CoordinatorAgent):
         self,
         agent_id: AgentID,
         subordinates: Dict[AgentID, ChargingSlot],
-        features: Optional[List[FeatureProvider]] = None,
+        features: Optional[List[Feature]] = None,
         upstream_id: Optional[AgentID] = None,
         env_id: Optional[str] = None,
-        tick_config: Optional[TickConfig] = None,
+        schedule_config: Optional[ScheduleConfig] = None,
         policy: Optional[Policy] = None,
         protocol: Optional[Protocol] = None,
     ):
@@ -59,7 +59,7 @@ class StationCoordinator(CoordinatorAgent):
             subordinates=subordinates,
             upstream_id=upstream_id,
             env_id=env_id,
-            tick_config=tick_config,
+            schedule_config=schedule_config,
             policy=policy,
             protocol=protocol or VerticalProtocol(
                 action_protocol=BroadcastActionProtocol(),
