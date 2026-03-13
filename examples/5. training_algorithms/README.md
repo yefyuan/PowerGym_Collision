@@ -125,4 +125,4 @@ config = (
 
 ## Next Steps
 
-- **Level 6**: Event-Driven Simulation -- TickConfig, EventScheduler, dual-mode execution
+- **Level 6**: Event-Driven Simulation -- ScheduleConfig, EventScheduler, dual-mode execution

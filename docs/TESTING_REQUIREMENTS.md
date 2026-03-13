@@ -275,7 +275,7 @@ All examples are standalone scripts. Each must run without error and produce mea
 | Script | Run Command | Passing Criteria |
 |--------|-------------|------------------|
 | `dual_mode_execution.py` | `python "examples/6. event_driven_simulation/dual_mode_execution.py"` | Step-based: 10 steps complete with deterministic timing; Event-driven: simulation runs for target duration; event count breakdown printed with >0 AGENT_TICK events |
-| `tick_config_and_scheduling.py` | `python "examples/6. event_driven_simulation/tick_config_and_scheduling.py"` | Deterministic config: exact intervals; Jittered config: samples show expected mean and std; UNIFORM and GAUSSIAN distributions produce different ranges |
+| `schedule_config_and_scheduling.py` | `python "examples/6. event_driven_simulation/schedule_config_and_scheduling.py"` | Deterministic config: exact intervals; Jittered config: samples show expected mean and std; UNIFORM and GAUSSIAN distributions produce different ranges |
 
 ### Level 7: Advanced Patterns (`examples/7. advanced_patterns/`)
 
@@ -426,7 +426,7 @@ python "examples/4. protocols_and_coordination/vertical_action_decomposition.py"
 python "examples/5. training_algorithms/policy_and_training.py"
 python "examples/5. training_algorithms/rllib_integration.py"
 python "examples/6. event_driven_simulation/dual_mode_execution.py"
-python "examples/6. event_driven_simulation/tick_config_and_scheduling.py"
+python "examples/6. event_driven_simulation/schedule_config_and_scheduling.py"
 python "examples/7. advanced_patterns/custom_env_and_visibility.py"
 python "examples/7. advanced_patterns/mixed_action_spaces.py"
 ```

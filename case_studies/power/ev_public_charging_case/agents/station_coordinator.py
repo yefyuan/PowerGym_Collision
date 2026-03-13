@@ -14,7 +14,7 @@ from heron.core.feature import Feature
 from heron.core.policies import Policy
 from heron.protocols.base import Protocol
 from heron.protocols.vertical import BroadcastActionProtocol, VerticalProtocol
-from heron.scheduling.tick_config import ScheduleConfig
+from heron.scheduling.schedule_config import ScheduleConfig
 from heron.utils.typing import AgentID
 
 from case_studies.power.ev_public_charging_case.features import ChargingStationFeature, MarketFeature, RegulationFeature

@@ -127,7 +127,7 @@ System Agent
 Proxy Agent
 -----------
 
-.. py:class:: heron.agents.ProxyAgent(agent_id: str, actual_agent: Agent, broker: MessageBroker, upstream_id: str = None)
+.. py:class:: heron.agents.Proxy(agent_id: str, actual_agent: Agent, broker: MessageBroker, upstream_id: str = None)
 
    Wrapper for message-based distributed execution.
 
@@ -144,11 +144,11 @@ Proxy Agent
 
    .. code-block:: python
 
-      from heron.agents import ProxyAgent
+      from heron.agents import Proxy
       from heron.messaging.memory import InMemoryBroker
 
       broker = InMemoryBroker()
-      proxy = ProxyAgent(
+      proxy = Proxy(
           agent_id="sensor_1_proxy",
           actual_agent=sensor,
           broker=broker,

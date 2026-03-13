@@ -40,11 +40,11 @@ A **domain-agnostic Multi-Agent Reinforcement Learning (MARL) framework** for hi
 ```
 heron/                          # Core framework
 ├── agents/                     # Agent hierarchy (Field, Coordinator, System, Proxy)
-├── core/                       # Action, Observation, State, FeatureProvider, Policy
+├── core/                       # Action, Observation, State, Feature, Policy
 ├── protocols/                  # Vertical & horizontal coordination protocols
 ├── envs/                       # Environment base classes & framework adapters
 ├── messaging/                  # Message broker (InMemory, extensible)
-└── scheduling/                 # Event-driven simulation (TickConfig, EventScheduler)
+└── scheduling/                 # Event-driven simulation (ScheduleConfig, EventScheduler)
 
 case_studies/power/             # Power grid case study (PandaPower integration)
 examples/                       # Framework-level tutorials
@@ -80,16 +80,16 @@ Features are the building blocks of agent state. Each feature declares who can o
 ```python
 from dataclasses import dataclass
 from typing import ClassVar, Sequence
-from heron.core import FeatureProvider
+from heron.core import Feature
 
 @dataclass(slots=True)
-class BatterySOC(FeatureProvider):
+class BatterySOC(Feature):
     visibility: ClassVar[Sequence[str]] = ["owner", "upper_level"]
     soc: float = 0.5          # State of charge (0-1)
     capacity: float = 100.0   # kWh
 
 @dataclass(slots=True)
-class PowerOutput(FeatureProvider):
+class PowerOutput(Feature):
     visibility: ClassVar[Sequence[str]] = ["public"]  # Everyone can see
     p_kw: float = 0.0
     q_kvar: float = 0.0
@@ -103,7 +103,7 @@ Extend `FieldAgent` and implement four required methods:
 
 ```python
 from heron.agents import FieldAgent
-from heron.core import Action, FeatureProvider
+from heron.core import Action, Feature
 from typing import List, Any
 import numpy as np
 
@@ -127,7 +127,7 @@ class Battery(FieldAgent):
         soc = local_state["BatterySOC"]["soc"]
         return -abs(soc - 0.5)  # Penalize deviation from 50%
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         """Define the action space."""
         action = Action()
         action.set_specs(dim_c=1, range=(np.array([-10.0]), np.array([10.0])))
@@ -165,16 +165,16 @@ obs, info = env.reset()
 obs, rewards, terminated, truncated, infos = env.step(actions)
 
 # Event-driven mode (realistic testing) — heterogeneous timing
-from heron.scheduling import TickConfig, JitterType, EventAnalyzer
+from heron.scheduling import ScheduleConfig, JitterType, EpisodeAnalyzer
 
-coordinator.tick_config = TickConfig.with_jitter(
+coordinator.schedule_config = ScheduleConfig.with_jitter(
     tick_interval=5.0,       # Ticks every 5 seconds
     obs_delay=0.1,           # 100ms observation latency
     act_delay=0.2,           # 200ms actuation delay
     jitter_type=JitterType.GAUSSIAN,
     jitter_ratio=0.1,        # 10% timing jitter
 )
-result = env.run_event_driven(event_analyzer=EventAnalyzer(), t_end=3600.0)
+result = env.run_event_driven(episode_analyzer=EpisodeAnalyzer(), t_end=3600.0)
 ```
 
 ---
@@ -235,7 +235,7 @@ class MyEnv(HeronEnv):
 
 ### Visibility System
 
-Features declare visibility rules as a class variable. The `ProxyAgent` automatically filters observations based on who's requesting:
+Features declare visibility rules as a class variable. The `Proxy` automatically filters observations based on who's requesting:
 
 | Rule | Who Can See |
 |------|-------------|
@@ -261,11 +261,11 @@ A step-by-step guide to building a complete multi-agent system from scratch:
 
 | # | Notebook | Topic | Time |
 |---|----------|-------|------|
-| 01 | [Features & State](case_studies/power/tutorials/01_features_and_state.ipynb) | `FeatureProvider`, declarative visibility, state classes | 15 min |
+| 01 | [Features & State](case_studies/power/tutorials/01_features_and_state.ipynb) | `Feature`, declarative visibility, state classes | 15 min |
 | 02 | [Building Agents](case_studies/power/tutorials/02_building_agents.ipynb) | `FieldAgent`, `CoordinatorAgent`, `SystemAgent` hierarchy | 20 min |
-| 03 | [Building Environment](case_studies/power/tutorials/03_building_environment.ipynb) | `HeronEnv`, `ProxyAgent`, state conversion pattern | 15 min |
+| 03 | [Building Environment](case_studies/power/tutorials/03_building_environment.ipynb) | `HeronEnv`, `Proxy`, state conversion pattern | 15 min |
 | 04 | [Training with RLlib](case_studies/power/tutorials/04_training_with_rllib.ipynb) | CTDE training with MAPPO, `VerticalProtocol` | 10 min |
-| 05 | [Event-Driven Testing](case_studies/power/tutorials/05_event_driven_testing.ipynb) | `TickConfig`, `EventScheduler`, jitter, dual-mode | 15 min |
+| 05 | [Event-Driven Testing](case_studies/power/tutorials/05_event_driven_testing.ipynb) | `ScheduleConfig`, `EventScheduler`, jitter, dual-mode | 15 min |
 | 06 | [Custom Protocols](case_studies/power/tutorials/06_custom_protocols.ipynb) | Composing `CommunicationProtocol` + `ActionProtocol` | 15 min |
 
 **Total: ~90 minutes** from zero to a fully trained and realistically tested multi-agent system.
@@ -310,7 +310,7 @@ my_project/
 
 To extend HERON for a new domain, you typically need to:
 
-1. **Define features** — Subclass `FeatureProvider` with domain-specific state variables
+1. **Define features** — Subclass `Feature` with domain-specific state variables
 2. **Create agents** — Extend `FieldAgent` (devices) and optionally `CoordinatorAgent` (groups)
 3. **Build an environment** — Implement `HeronEnv` with your simulator
 4. **Choose/create protocols** — Use built-in `VerticalProtocol` or compose your own

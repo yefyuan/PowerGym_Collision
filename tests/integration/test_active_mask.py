@@ -16,7 +16,7 @@ from heron.core.feature import Feature
 from heron.core.action import Action
 from heron.envs.base import HeronEnv
 from heron.protocols.vertical import VerticalProtocol
-from heron.scheduling.tick_config import ScheduleConfig
+from heron.scheduling.schedule_config import ScheduleConfig
 from heron.utils.typing import AgentID
 
 

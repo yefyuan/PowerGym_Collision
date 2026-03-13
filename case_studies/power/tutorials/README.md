@@ -23,11 +23,11 @@ pip install ray[rllib] pettingzoo gymnasium numpy
 
 | Notebook | Topic | Time | What You'll Learn |
 |----------|-------|------|-------------------|
-| [01_features_and_state](01_features_and_state.ipynb) | Features & Visibility | 15 min | `FeatureProvider`, declarative visibility, three state classes |
+| [01_features_and_state](01_features_and_state.ipynb) | Features & Visibility | 15 min | `Feature`, declarative visibility, three state classes |
 | [02_building_agents](02_building_agents.ipynb) | Agent Hierarchy | 20 min | `FieldAgent`, `CoordinatorAgent`, `SystemAgent`, bottom-up construction |
-| [03_building_environment](03_building_environment.ipynb) | Environment | 15 min | `HeronEnv`, `ProxyAgent`, state conversion pattern |
+| [03_building_environment](03_building_environment.ipynb) | Environment | 15 min | `HeronEnv`, `Proxy`, state conversion pattern |
 | [04_training_with_rllib](04_training_with_rllib.ipynb) | CTDE Training | 10 min | Centralized training, `VerticalProtocol` action decomposition, event-driven evaluation |
-| [05_event_driven_testing](05_event_driven_testing.ipynb) | Dual Mode | 15 min | `TickConfig`, `EventScheduler`, jitter, CPS-calibrated timing |
+| [05_event_driven_testing](05_event_driven_testing.ipynb) | Dual Mode | 15 min | `ScheduleConfig`, `EventScheduler`, jitter, CPS-calibrated timing |
 
 ### Advanced Tutorial (Customization & Extension)
 
@@ -60,7 +60,7 @@ SimpleMultiMicrogridEnv (Environment)
 │   └── mg_2 (CoordinatorAgent)
 │       ├── mg_2_bat (FieldAgent - Battery)
 │       └── mg_2_gen (FieldAgent - Generator)
-└── ProxyAgent (state management, visibility filtering)
+└── Proxy (state management, visibility filtering)
 ```
 
 ## Key HERON Contributions (Demonstrated in Tutorials)
@@ -69,7 +69,7 @@ SimpleMultiMicrogridEnv (Environment)
 No manual filtering—features declare who can see them:
 ```python
 @dataclass(slots=True)
-class BatterySOC(FeatureProvider):
+class BatterySOC(Feature):
     visibility: ClassVar[Sequence[str]] = ['owner', 'upper_level']  # Automatic filtering
     soc: float = 0.5
 ```
@@ -113,7 +113,7 @@ Train fast, test realistically—**this cannot be achieved by wrapping PettingZo
 env.step(actions)
 
 # Testing: event-driven (realistic timing, delays, jitter)
-env.run_event_driven(event_analyzer=analyzer, t_end=300.0)
+env.run_event_driven(episode_analyzer=analyzer, t_end=300.0)
 ```
 
 ### 6. Pluggable Protocols (Tutorial 06)

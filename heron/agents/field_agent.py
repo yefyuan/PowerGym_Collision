@@ -13,7 +13,7 @@ from heron.core.action import Action
 from heron.core.policies import Policy
 from heron.utils.typing import AgentID
 from heron.protocols.base import Protocol
-from heron.scheduling.tick_config import DEFAULT_FIELD_AGENT_SCHEDULE_CONFIG, ScheduleConfig
+from heron.scheduling.schedule_config import DEFAULT_FIELD_AGENT_SCHEDULE_CONFIG, ScheduleConfig
 from heron.scheduling.scheduler import EventScheduler, Event
 from heron.agents.proxy_agent import Proxy
 from heron.agents.constants import (

@@ -35,7 +35,7 @@ heron/                          # Domain-agnostic MARL framework
 ├── scheduling/                 # Event-driven scheduling
 │   ├── scheduler.py            # EventScheduler (heap-based priority queue)
 │   ├── event.py                # Event dataclass, EventType enum
-│   ├── tick_config.py          # ScheduleConfig (intervals, delays, jitter)
+│   ├── schedule_config.py          # ScheduleConfig (intervals, delays, jitter)
 │   └── analysis.py             # EpisodeAnalyzer, EpisodeStats
 │
 ├── envs/                       # Base environment interfaces

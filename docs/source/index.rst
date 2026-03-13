@@ -125,7 +125,7 @@ Key Features
       :link: api/core/index
       :link-type: doc
 
-      Composable FeatureProviders with visibility control
+      Composable Features with visibility control
 
    .. grid-item-card:: Coordination Protocols
       :link: api/protocols/index

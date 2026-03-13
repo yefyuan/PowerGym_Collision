@@ -10,7 +10,7 @@ This module provides discrete-event simulation capabilities with:
 
 from heron.scheduling.event import Event, EventType, EVENT_TYPE_FROM_STRING
 from heron.scheduling.scheduler import EventScheduler
-from heron.scheduling.tick_config import (
+from heron.scheduling.schedule_config import (
     DEFAULT_COORDINATOR_AGENT_SCHEDULE_CONFIG,
     DEFAULT_FIELD_AGENT_SCHEDULE_CONFIG,
     DEFAULT_SYSTEM_AGENT_SCHEDULE_CONFIG,

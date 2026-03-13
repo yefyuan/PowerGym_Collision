@@ -42,7 +42,7 @@ from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.agents.field_agent import FieldAgent
 from heron.agents.system_agent import SystemAgent
 from heron.core.feature import Feature
-from heron.scheduling.tick_config import ScheduleConfig
+from heron.scheduling.schedule_config import ScheduleConfig
 from heron.envs.base import HeronEnv
 from heron.protocols.base import Protocol
 from heron.envs.simple import SimpleEnv

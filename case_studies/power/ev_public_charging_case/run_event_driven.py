@@ -27,7 +27,7 @@ from heron.agents.field_agent import FieldAgent
 from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.agents.system_agent import SystemAgent
 from heron.scheduling.analysis import EpisodeAnalyzer
-from heron.scheduling.tick_config import JitterType, ScheduleConfig
+from heron.scheduling.schedule_config import JitterType, ScheduleConfig
 
 from case_studies.power.ev_public_charging_case.policies import PricingPolicy
 from case_studies.power.ev_public_charging_case.train_rllib import create_charging_env, train_simple

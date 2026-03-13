@@ -15,7 +15,7 @@ from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.core.feature import Feature
 from heron.core.policies import Policy
 from heron.protocols.base import Protocol
-from heron.scheduling.tick_config import ScheduleConfig
+from heron.scheduling.schedule_config import ScheduleConfig
 from heron.utils.typing import AgentID
 from powergrid.agents.device_agent import DeviceAgent
 

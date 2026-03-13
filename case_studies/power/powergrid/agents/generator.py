@@ -17,7 +17,7 @@ from heron.core.action import Action
 from heron.core.feature import Feature
 from heron.core.policies import Policy
 from heron.protocols.base import Protocol
-from heron.scheduling.tick_config import ScheduleConfig
+from heron.scheduling.schedule_config import ScheduleConfig
 from heron.utils.typing import AgentID
 from powergrid.core.features.electrical import ElectricalBasePh
 from powergrid.core.features.power_limits import PowerLimits

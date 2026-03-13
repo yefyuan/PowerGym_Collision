@@ -12,7 +12,7 @@ from heron.core.policies import Policy
 from heron.messaging import MessageBroker, ChannelManager, Message, MessageType
 from heron.utils.typing import AgentID, MultiAgentDict
 from heron.scheduling import EventScheduler, Event, EpisodeAnalyzer, EpisodeStats
-from heron.scheduling.tick_config import ScheduleConfig
+from heron.scheduling.schedule_config import ScheduleConfig
 from heron.agents.system_agent import SystemAgent
 from heron.agents.proxy_agent import Proxy
 from heron.agents.constants import SYSTEM_AGENT_ID, PROXY_AGENT_ID

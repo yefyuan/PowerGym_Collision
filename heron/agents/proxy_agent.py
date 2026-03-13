@@ -195,7 +195,7 @@ class Proxy(Agent):
     def message_delivery_handler(self, event: Event, scheduler: EventScheduler) -> None:
         recipient_id = event.agent_id
         if recipient_id != self.agent_id:
-            raise ValueError(f"Event {event} sent to {event.agent_id} is handled in proxy_agent!")
+            raise ValueError(f"Event {event} sent to {event.agent_id} is handled in proxy!")
         sender_id = event.payload.get("sender")
         message_content = event.payload.get("message", {})
 
@@ -266,7 +266,7 @@ class Proxy(Agent):
             # Store tick result per-agent for retrieval by parent agents
             self._tick_results[sender_id] = tick_result
         else:
-            raise NotImplementedError(f"Unknown message content {message_content} in message_delivery to proxy_agent")
+            raise NotImplementedError(f"Unknown message content {message_content} in message_delivery to proxy")
 
     def _handle_get_info_request(self, sender_id: AgentID, request_type: str, protocol: Optional[Protocol] = None):
         if request_type == INFO_TYPE_OBS:

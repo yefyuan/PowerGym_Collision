@@ -51,7 +51,7 @@ python custom_heron_env.py         # ~5 sec
 | `add_agents(..., coordinator="zone_a")` | Assign agents to a coordinator at creation time |
 | Auto-coordinator | Omit `add_coordinator` and the builder wraps all agents automatically |
 | `add_agent(id, cls, coordinator=...)` | Single named agent with explicit coordinator assignment |
-| `add_system_agent(tick_config=...)` | Custom system-level timing configuration |
+| `add_system_agent(schedule_config=...)` | Custom system-level timing configuration |
 
 **Key takeaway**: `EnvBuilder` resolves the agent hierarchy for you. Coordinator assignment and auto-coordinators eliminate manual wiring.
 

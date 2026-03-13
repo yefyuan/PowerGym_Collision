@@ -10,7 +10,7 @@ from heron.agents.system_agent import SystemAgent
 from heron.core.feature import Feature
 from heron.core.policies import Policy
 from heron.protocols.base import Protocol, NoProtocol
-from heron.scheduling.tick_config import ScheduleConfig
+from heron.scheduling.schedule_config import ScheduleConfig
 from heron.utils.typing import AgentID
 from powergrid.agents.power_grid_agent import PowerGridAgent
 from powergrid.core.features.system import (

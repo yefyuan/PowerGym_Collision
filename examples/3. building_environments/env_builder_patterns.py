@@ -28,7 +28,7 @@ from heron.agents.field_agent import FieldAgent
 from heron.core.action import Action
 from heron.core.feature import Feature
 from heron.envs.builder import EnvBuilder
-from heron.scheduling.tick_config import ScheduleConfig
+from heron.scheduling.schedule_config import ScheduleConfig
 
 
 # ---------------------------------------------------------------------------

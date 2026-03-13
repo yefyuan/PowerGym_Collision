@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 from heron.core.feature import Feature
 from heron.messaging import MessageBroker, ChannelManager, Message as BrokerMessage, MessageType
 from heron.utils.typing import AgentID
-from heron.scheduling.tick_config import ScheduleConfig, JitterType
+from heron.scheduling.schedule_config import ScheduleConfig, JitterType
 from heron.scheduling.scheduler import EventScheduler
 from heron.scheduling.event import Event, EventType, EVENT_TYPE_FROM_STRING
 from heron.core.policies import Policy

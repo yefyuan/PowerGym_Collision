@@ -13,7 +13,7 @@ from heron.utils.typing import AgentID, MultiAgentDict
 from heron.core.policies import Policy
 from heron.protocols.base import Protocol
 from heron.scheduling.scheduler import Event, EventScheduler
-from heron.scheduling.tick_config import DEFAULT_SYSTEM_AGENT_SCHEDULE_CONFIG, ScheduleConfig
+from heron.scheduling.schedule_config import DEFAULT_SYSTEM_AGENT_SCHEDULE_CONFIG, ScheduleConfig
 from gymnasium.spaces import Box, Space
 from heron.agents.constants import (
     SYSTEM_LEVEL,
@@ -161,7 +161,7 @@ class SystemAgent(Agent):
         
         if self.policy:
             # Compute & execute self action
-            # Ask proxy_agent for global state to compute local action
+            # Ask proxy for global state to compute local action
             scheduler.schedule_message_delivery(
                 sender_id=self.agent_id,
                 recipient_id=PROXY_AGENT_ID,

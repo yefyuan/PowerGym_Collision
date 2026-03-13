@@ -6,15 +6,15 @@
 
 | Concept | Where |
 |---------|-------|
-| TickConfig basics (intervals, delays) | `tick_config_and_scheduling.py` Part 1 |
-| Deterministic vs jittered configs | `tick_config_and_scheduling.py` Part 2 |
-| JitterType distributions | `tick_config_and_scheduling.py` Part 3 |
-| Default agent tick configs | `tick_config_and_scheduling.py` Part 4 |
-| EventScheduler priority queue | `tick_config_and_scheduling.py` Part 5 |
-| Event types and cascades | `tick_config_and_scheduling.py` Part 6 |
+| ScheduleConfig basics (intervals, delays) | `schedule_config_and_scheduling.py` Part 1 |
+| Deterministic vs jittered configs | `schedule_config_and_scheduling.py` Part 2 |
+| JitterType distributions | `schedule_config_and_scheduling.py` Part 3 |
+| Default agent tick configs | `schedule_config_and_scheduling.py` Part 4 |
+| EventScheduler priority queue | `schedule_config_and_scheduling.py` Part 5 |
+| Event types and cascades | `schedule_config_and_scheduling.py` Part 6 |
 | Step-based execution (training) | `dual_mode_execution.py` Part 1 |
 | Event-driven execution (eval) | `dual_mode_execution.py` Part 2 |
-| EpisodeResult analysis | `dual_mode_execution.py` Part 3 |
+| EpisodeStats analysis | `dual_mode_execution.py` Part 3 |
 | Mode comparison | `dual_mode_execution.py` Part 4 |
 
 ## Prerequisites
@@ -46,10 +46,10 @@ Dual-Mode Execution:
                                         MESSAGE_DELIVERY -> next tick
 ```
 
-## TickConfig
+## ScheduleConfig
 
 ```
-TickConfig fields:
+ScheduleConfig fields:
   tick_interval   how often agent acts (seconds)
   obs_delay       observation latency
   act_delay       action effect delay
@@ -57,8 +57,8 @@ TickConfig fields:
   reward_delay    reward aggregation delay
 
 Constructors:
-  TickConfig.deterministic(...)     no jitter (training)
-  TickConfig.with_jitter(...)       realistic timing (testing)
+  ScheduleConfig.deterministic(...)     no jitter (training)
+  ScheduleConfig.with_jitter(...)       realistic timing (testing)
 
 JitterType:
   NONE       deterministic
@@ -90,7 +90,7 @@ CUSTOM              default   Domain-specific
 ```
 6. event_driven_simulation/
 ├── README.md
-├── tick_config_and_scheduling.py   # TickConfig + EventScheduler basics
+├── schedule_config_and_scheduling.py   # ScheduleConfig + EventScheduler basics
 └── dual_mode_execution.py          # Step-based vs event-driven
 ```
 
@@ -99,8 +99,8 @@ CUSTOM              default   Domain-specific
 ```bash
 cd "examples/6. event_driven_simulation"
 
-# TickConfig and scheduling fundamentals
-python tick_config_and_scheduling.py
+# ScheduleConfig and scheduling fundamentals
+python schedule_config_and_scheduling.py
 
 # Dual-mode execution comparison
 python dual_mode_execution.py
@@ -108,16 +108,16 @@ python dual_mode_execution.py
 
 ## Key API
 
-### TickConfig
+### ScheduleConfig
 
 ```python
-from heron.scheduling import TickConfig, JitterType
+from heron.scheduling import ScheduleConfig, JitterType
 
 # Training: deterministic
-config = TickConfig.deterministic(tick_interval=1.0, obs_delay=0.1)
+config = ScheduleConfig.deterministic(tick_interval=1.0, obs_delay=0.1)
 
 # Testing: jittered
-config = TickConfig.with_jitter(
+config = ScheduleConfig.with_jitter(
     tick_interval=1.0,
     obs_delay=0.1,
     act_delay=0.2,
@@ -130,13 +130,13 @@ config = TickConfig.with_jitter(
 ### Event-Driven Execution
 
 ```python
-from heron.scheduling import EventAnalyzer
+from heron.scheduling import EpisodeAnalyzer
 
 # Assign policies
 env.set_agent_policies({"room_a": my_policy, "room_b": my_policy})
 
 # Run simulation
-analyzer = EventAnalyzer(verbose=False, track_data=True)
+analyzer = EpisodeAnalyzer(verbose=False, track_data=True)
 result = env.run_event_driven(analyzer, t_end=100.0)
 
 # Analyze results
