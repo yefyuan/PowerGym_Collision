@@ -1,6 +1,6 @@
 """Observations & State -- how HERON composes and filters agent state.
 
-State is composed of multiple FeatureProviders, each with its own visibility.
+State is composed of multiple Features, each with its own visibility.
 When an agent *observes* another agent's state, HERON automatically filters
 features based on visibility rules, producing an Observation with:
   - `local`       : the observing agent's own state
@@ -22,7 +22,7 @@ from typing import Any, ClassVar, Sequence
 
 import numpy as np
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.state import FieldAgentState, CoordinatorAgentState
 from heron.core.observation import Observation
 
@@ -36,7 +36,7 @@ from heron.core.observation import Observation
 
 
 @dataclass(slots=True)
-class BatteryCharge(FeatureProvider):
+class BatteryCharge(Feature):
     """State of charge -- visible to owner and direct supervisor."""
     visibility: ClassVar[Sequence[str]] = ["owner", "upper_level"]
     soc: float = 0.5
@@ -44,14 +44,14 @@ class BatteryCharge(FeatureProvider):
 
 
 @dataclass(slots=True)
-class TemperatureSensor(FeatureProvider):
+class TemperatureSensor(Feature):
     """Internal temperature -- private to the owning agent."""
     visibility: ClassVar[Sequence[str]] = ["owner"]
     temp_celsius: float = 25.0
 
 
 @dataclass(slots=True)
-class GridVoltage(FeatureProvider):
+class GridVoltage(Feature):
     """Bus voltage -- public information."""
     visibility: ClassVar[Sequence[str]] = ["public"]
     voltage_pu: float = 1.0

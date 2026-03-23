@@ -5,14 +5,14 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from powergrid.utils.phase import PhaseModel, PhaseSpec
 
 _CONN_SET = {"A", "B", "C", "AB", "BC", "CA", "ABC"}
 
 
 @dataclass(slots=True)
-class PhaseConnection(FeatureProvider):
+class PhaseConnection(Feature):
     phase_model: PhaseModel = PhaseModel.BALANCED_1PH
     phase_spec: Optional[PhaseSpec] = field(default_factory=PhaseSpec)
     connection: Optional[str] = None  # presence (1φ) or subset token (3φ)

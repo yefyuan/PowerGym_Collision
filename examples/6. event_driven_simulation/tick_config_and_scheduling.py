@@ -1,11 +1,11 @@
-"""TickConfig & EventScheduler -- configuring agent timing.
+"""ScheduleConfig & EventScheduler -- configuring agent timing.
 
 HERON's event-driven mode simulates realistic distributed systems where
 agents tick at different rates, observations arrive with latency, and
-actions take effect after a delay. TickConfig controls all of this.
+actions take effect after a delay. ScheduleConfig controls all of this.
 
 This script demonstrates:
-1. TickConfig basics -- tick_interval, obs_delay, act_delay, msg_delay
+1. ScheduleConfig basics -- tick_interval, obs_delay, act_delay, msg_delay
 2. Deterministic vs jittered configs -- training vs testing modes
 3. JitterType distributions -- NONE, UNIFORM, GAUSSIAN
 4. Default configs -- field (1s), coordinator (60s), system (300s)
@@ -15,35 +15,35 @@ Domain: Standalone demonstrations (no env needed).
 
 Usage:
     cd "examples/6. event_driven_simulation"
-    python tick_config_and_scheduling.py
+    python schedule_config_and_scheduling.py
 """
 
 import numpy as np
 
 from heron.scheduling import (
-    TickConfig,
+    ScheduleConfig,
     JitterType,
-    DEFAULT_FIELD_AGENT_TICK_CONFIG,
-    DEFAULT_COORDINATOR_AGENT_TICK_CONFIG,
-    DEFAULT_SYSTEM_AGENT_TICK_CONFIG,
+    DEFAULT_FIELD_AGENT_SCHEDULE_CONFIG,
+    DEFAULT_COORDINATOR_AGENT_SCHEDULE_CONFIG,
+    DEFAULT_SYSTEM_AGENT_SCHEDULE_CONFIG,
     EventScheduler,
     Event,
     EventType,
-    EventAnalyzer,
+    EpisodeAnalyzer,
 )
 
 
 # ---------------------------------------------------------------------------
-# 1. TickConfig basics
+# 1. ScheduleConfig basics
 # ---------------------------------------------------------------------------
 
-def demo_tick_config_basics():
-    """Show TickConfig parameters and their meaning."""
+def demo_schedule_config_basics():
+    """Show ScheduleConfig parameters and their meaning."""
     print("=" * 60)
-    print("Part 1: TickConfig Basics")
+    print("Part 1: ScheduleConfig Basics")
     print("=" * 60)
     print("""
-  TickConfig controls timing for each agent in event-driven mode:
+  ScheduleConfig controls timing for each agent in event-driven mode:
 
     tick_interval  -- time between agent steps (how often agent acts)
     obs_delay      -- latency for observations to arrive
@@ -53,7 +53,7 @@ def demo_tick_config_basics():
 """)
 
     # Create a config for a sensor that ticks every 0.5s
-    config = TickConfig(
+    config = ScheduleConfig(
         tick_interval=0.5,
         obs_delay=0.05,    # 50ms observation latency
         act_delay=0.1,     # 100ms action delay
@@ -78,7 +78,7 @@ def demo_tick_config_basics():
 # ---------------------------------------------------------------------------
 
 def demo_deterministic_vs_jitter():
-    """Compare TickConfig.deterministic() vs TickConfig.with_jitter()."""
+    """Compare ScheduleConfig.deterministic() vs ScheduleConfig.with_jitter()."""
     print("\n" + "=" * 60)
     print("Part 2: Deterministic vs Jittered Configs")
     print("=" * 60)
@@ -91,14 +91,14 @@ def demo_deterministic_vs_jitter():
 """)
 
     # Deterministic (for training)
-    det_config = TickConfig.deterministic(
+    det_config = ScheduleConfig.deterministic(
         tick_interval=1.0,
         obs_delay=0.1,
         act_delay=0.2,
     )
 
     # Jittered (for testing)
-    jit_config = TickConfig.with_jitter(
+    jit_config = ScheduleConfig.with_jitter(
         tick_interval=1.0,
         obs_delay=0.1,
         act_delay=0.2,
@@ -133,7 +133,7 @@ def demo_jitter_types():
     n_samples = 1000
 
     for jtype in [JitterType.UNIFORM, JitterType.GAUSSIAN]:
-        config = TickConfig.with_jitter(
+        config = ScheduleConfig.with_jitter(
             tick_interval=base,
             jitter_type=jtype,
             jitter_ratio=ratio,
@@ -177,9 +177,9 @@ def demo_default_configs():
 """)
 
     defaults = [
-        ("Field Agent", DEFAULT_FIELD_AGENT_TICK_CONFIG),
-        ("Coordinator Agent", DEFAULT_COORDINATOR_AGENT_TICK_CONFIG),
-        ("System Agent", DEFAULT_SYSTEM_AGENT_TICK_CONFIG),
+        ("Field Agent", DEFAULT_FIELD_AGENT_SCHEDULE_CONFIG),
+        ("Coordinator Agent", DEFAULT_COORDINATOR_AGENT_SCHEDULE_CONFIG),
+        ("System Agent", DEFAULT_SYSTEM_AGENT_SCHEDULE_CONFIG),
     ]
 
     print(f"  {'Agent Type':<22} {'tick_interval':>14} {'jitter':>10}")
@@ -188,9 +188,9 @@ def demo_default_configs():
         print(f"  {name:<22} {config.tick_interval:>12.1f}s {config.jitter_type.value:>10}")
 
     print("""
-  Override per agent by passing tick_config to agent construction:
+  Override per agent by passing schedule_config to agent construction:
 
-    TickConfig.with_jitter(
+    ScheduleConfig.with_jitter(
         tick_interval=0.5,    # faster than default 1s
         obs_delay=0.05,
         jitter_type=JitterType.GAUSSIAN,
@@ -303,7 +303,7 @@ def demo_event_types():
 # ---------------------------------------------------------------------------
 
 def main():
-    demo_tick_config_basics()
+    demo_schedule_config_basics()
     demo_deterministic_vs_jitter()
     demo_jitter_types()
     demo_default_configs()
@@ -314,7 +314,7 @@ def main():
     print("Summary")
     print("=" * 60)
     print("""
-  TickConfig:
+  ScheduleConfig:
     Controls tick_interval, obs/act/msg/reward delays
     .deterministic() for training (no randomness)
     .with_jitter() for testing (realistic timing)

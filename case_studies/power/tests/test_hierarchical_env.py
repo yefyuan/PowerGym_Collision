@@ -25,8 +25,8 @@ from heron.core.observation import Observation
 from heron.core.action import Action
 from heron.core.policies import Policy, obs_to_vector, vector_to_action
 from heron.protocols.vertical import VerticalProtocol
-from heron.scheduling import TickConfig, JitterType
-from heron.scheduling.analysis import EventAnalyzer
+from heron.scheduling import ScheduleConfig, JitterType
+from heron.scheduling.analysis import EpisodeAnalyzer
 
 # PowerGrid imports
 from powergrid.agents import PowerGridAgent, Generator, ESS
@@ -458,11 +458,11 @@ def create_microgrid(mg_id: str, num_gen: int = 1, num_ess: int = 1) -> PowerGri
     return mg
 
 
-def create_3mg_system(tick_config: Optional[TickConfig] = None) -> SystemAgent:
+def create_3mg_system(schedule_config: Optional[ScheduleConfig] = None) -> SystemAgent:
     """Create system agent with 3 microgrids.
 
     Args:
-        tick_config: Optional tick config for system agent. If provided,
+        schedule_config: Optional tick config for system agent. If provided,
             _simulation_wait_interval will use this tick_interval.
     """
     mg1 = create_microgrid("MG1", num_gen=1, num_ess=1)
@@ -472,7 +472,7 @@ def create_3mg_system(tick_config: Optional[TickConfig] = None) -> SystemAgent:
     return SystemAgent(
         agent_id="system_agent",
         subordinates={"MG1": mg1, "MG2": mg2, "MG3": mg3},
-        tick_config=tick_config,
+        schedule_config=schedule_config,
     )
 
 
@@ -713,7 +713,7 @@ def run_event_driven(
             agent.policy = policy
 
     # Configure tick timing for system agent (this is critical for recurring ticks!)
-    system_tick_config = TickConfig.with_jitter(
+    system_schedule_config = ScheduleConfig.with_jitter(
         tick_interval=30.0,  # System tick every 30 time units
         obs_delay=0.3,
         act_delay=0.5,
@@ -725,7 +725,7 @@ def run_event_driven(
     )
 
     # Configure tick timing for coordinators
-    coordinator_tick_config = TickConfig.with_jitter(
+    coordinator_schedule_config = ScheduleConfig.with_jitter(
         tick_interval=10.0,
         obs_delay=0.2,
         act_delay=0.3,
@@ -737,7 +737,7 @@ def run_event_driven(
     )
 
     # Configure tick timing for field agents
-    field_tick_config = TickConfig.with_jitter(
+    field_schedule_config = ScheduleConfig.with_jitter(
         tick_interval=5.0,
         obs_delay=0.1,
         act_delay=0.2,
@@ -750,27 +750,27 @@ def run_event_driven(
     # Apply tick configs to all agents
     for agent_id, agent in env.registered_agents.items():
         if agent_id == "system_agent":
-            agent.tick_config = system_tick_config
+            agent.schedule_config = system_schedule_config
         elif isinstance(agent, PowerGridAgent):
-            agent.tick_config = coordinator_tick_config
+            agent.schedule_config = coordinator_schedule_config
             for sub_agent in agent.subordinates.values():
-                sub_agent.tick_config = field_tick_config
-        elif hasattr(agent, 'tick_config') and agent_id != "proxy_agent":
-            agent.tick_config = field_tick_config
+                sub_agent.schedule_config = field_schedule_config
+        elif hasattr(agent, 'schedule_config') and agent_id != "proxy_agent":
+            agent.schedule_config = field_schedule_config
 
     # Update scheduler's tick config cache (it caches during attach())
     for agent_id, agent in env.registered_agents.items():
-        if hasattr(agent, 'tick_config'):
-            env.scheduler._agent_tick_configs[agent_id] = agent.tick_config
+        if hasattr(agent, 'schedule_config'):
+            env.scheduler._agent_schedule_configs[agent_id] = agent.schedule_config
 
     # Note: _simulation_wait_interval is now initialized early when creating system_agent
-    # with tick_config in main(), so no manual update needed here.
+    # with schedule_config in main(), so no manual update needed here.
 
     # Reset environment to apply new tick configs (scheduler resets and reschedules)
     env.reset(seed=100)
 
     # Create custom event analyzer that logs to our EventLogger
-    class DetailedEventAnalyzer(EventAnalyzer):
+    class DetailedEpisodeAnalyzer(EpisodeAnalyzer):
         def __init__(self, event_logger: EventLogger, **kwargs):
             super().__init__(**kwargs)
             self.event_logger = event_logger
@@ -794,15 +794,15 @@ def run_event_driven(
 
             return result
 
-    event_analyzer = DetailedEventAnalyzer(event_logger, verbose=False, track_data=True)
+    episode_analyzer = DetailedEpisodeAnalyzer(event_logger, verbose=False, track_data=True)
 
     print(f"\nRunning event-driven simulation for t_end={t_end}...")
-    env.run_event_driven(event_analyzer=event_analyzer, t_end=t_end)
+    env.run_event_driven(episode_analyzer=episode_analyzer, t_end=t_end)
 
     return {
-        "observations": event_analyzer.observation_count,
-        "state_updates": event_analyzer.state_update_count,
-        "action_results": event_analyzer.action_result_count,
+        "observations": episode_analyzer.observation_count,
+        "state_updates": episode_analyzer.state_update_count,
+        "action_results": episode_analyzer.action_result_count,
     }
 
 
@@ -817,7 +817,7 @@ def main():
     print("=" * 80)
 
     # Define system tick config early so _simulation_wait_interval is set correctly
-    system_tick_config = TickConfig.with_jitter(
+    system_schedule_config = ScheduleConfig.with_jitter(
         tick_interval=30.0,  # System tick every 30 time units
         obs_delay=0.3,
         act_delay=0.5,
@@ -829,7 +829,7 @@ def main():
     )
 
     # Create system with tick config (initializes _simulation_wait_interval correctly)
-    system_agent = create_3mg_system(tick_config=system_tick_config)
+    system_agent = create_3mg_system(schedule_config=system_schedule_config)
 
     total_devices = sum(
         len(mg.subordinates) for mg in system_agent.subordinates.values()

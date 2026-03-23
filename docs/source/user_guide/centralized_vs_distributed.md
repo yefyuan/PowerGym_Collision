@@ -109,16 +109,16 @@ eval_config = {"centralized": False, "train": False}
 
 ## Proxy Agent for Distributed Mode
 
-For distributed execution, use `ProxyAgent` to handle message-based coordination:
+For distributed execution, use `Proxy` to handle message-based coordination:
 
 ```python
-from heron.agents import ProxyAgent
+from heron.agents import Proxy
 from heron.messaging.memory import InMemoryBroker
 
 broker = InMemoryBroker()
 
 # Create proxy that wraps actual agent
-proxy = ProxyAgent(
+proxy = Proxy(
     agent_id="mg1_proxy",
     actual_agent=grid_agent,
     broker=broker,

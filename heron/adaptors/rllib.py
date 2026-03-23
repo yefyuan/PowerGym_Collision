@@ -15,14 +15,14 @@ Usage — pass agent/coordinator specs directly in ``env_config``::
                 "agents": [
                     {"agent_id": "drone_0", "agent_cls": Drone,
                      "features": [DroneFeature()], "coordinator": "fleet",
-                     "tick_config": TickConfig(...)},   # optional per-agent
+                     "schedule_config": ScheduleConfig(...)},   # optional per-agent
                 ],
                 "coordinators": [
                     {"coordinator_id": "fleet", "agent_cls": FleetManager,
-                     "tick_config": TickConfig(...)},   # optional per-coordinator
+                     "schedule_config": ScheduleConfig(...)},   # optional per-coordinator
                 ],
                 "system": {
-                    "tick_config": TickConfig(...),      # optional for SystemAgent
+                    "schedule_config": ScheduleConfig(...),      # optional for SystemAgent
                 },
                 "simulation": my_sim_func,
                 "max_steps": 100,
@@ -50,9 +50,9 @@ def _build_heron_env(config: Dict[str, Any]) -> HeronEnv:
     Reads ``agents``, ``coordinators``, and either ``simulation`` or
     ``env_class`` keys and constructs an ``EnvBuilder`` internally.
 
-    An optional ``"system"`` dict with a ``"tick_config"`` key sets the
+    An optional ``"system"`` dict with a ``"schedule_config"`` key sets the
     auto-created SystemAgent's tick config.  Individual agent/coordinator
-    specs can carry their own ``tick_config`` kwarg independently.
+    specs can carry their own ``schedule_config`` kwarg independently.
     """
     if "agents" not in config:
         raise ValueError(
@@ -68,7 +68,7 @@ def _build_heron_env(config: Dict[str, Any]) -> HeronEnv:
             agent_id=agent_cfg["agent_id"],
             agent_cls=agent_cfg["agent_cls"],
             features=agent_cfg.get("features"),
-            tick_config=agent_cfg.get("tick_config"),
+            schedule_config=agent_cfg.get("schedule_config"),
             coordinator=agent_cfg.get("coordinator"),
         )
 
@@ -78,12 +78,12 @@ def _build_heron_env(config: Dict[str, Any]) -> HeronEnv:
             agent_cls=coord_cfg.get("agent_cls"),
             features=coord_cfg.get("features"),
             protocol=coord_cfg.get("protocol"),
-            tick_config=coord_cfg.get("tick_config"),
+            schedule_config=coord_cfg.get("schedule_config"),
             subordinates=coord_cfg.get("subordinates"),
         )
     # Add system agent
     system_cfg = config.get("system", {})
-    builder.add_system_agent(tick_config=system_cfg.get("tick_config"))
+    builder.add_system_agent(schedule_config=system_cfg.get("schedule_config"))
 
     if "env_class" in config:
         builder.env_class(config["env_class"], **config.get("env_kwargs", {}))

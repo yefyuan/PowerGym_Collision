@@ -140,13 +140,13 @@ class ZoneController(CoordinatorAgent):
 
 ## Adding Custom Features
 
-Create domain-specific features by extending `FeatureProvider`:
+Create domain-specific features by extending `Feature`:
 
 ```python
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 import numpy as np
 
-class HumidityFeature(FeatureProvider):
+class HumidityFeature(Feature):
     """Humidity measurement feature."""
 
     def __init__(self, initial_humidity: float = 50.0):
@@ -165,10 +165,10 @@ class HumidityFeature(FeatureProvider):
 
 ## Message-Based Agents (Distributed Mode)
 
-For distributed execution, use `ProxyAgent`:
+For distributed execution, use `Proxy`:
 
 ```python
-from heron.agents import ProxyAgent
+from heron.agents import Proxy
 from heron.messaging.memory import InMemoryBroker
 
 broker = InMemoryBroker()
@@ -177,7 +177,7 @@ broker = InMemoryBroker()
 sensor = TemperatureSensor("sensor_1", "room_a")
 
 # Wrap with proxy for message-based communication
-proxy = ProxyAgent(
+proxy = Proxy(
     agent_id="sensor_1_proxy",
     actual_agent=sensor,
     broker=broker,
@@ -191,7 +191,7 @@ await proxy.step_distributed()
 ## Best Practices
 
 1. **Keep agents focused**: Each agent should have a single responsibility
-2. **Use features for state**: Compose state from FeatureProviders
+2. **Use features for state**: Compose state from Features
 3. **Define clear visibility**: Control information sharing with visibility tags
 4. **Implement reset properly**: Ensure deterministic behavior with seeds
 5. **Document action spaces**: Clearly define action dimensions and ranges

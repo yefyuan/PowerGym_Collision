@@ -22,7 +22,7 @@ import ray
 from heron.agents.field_agent import FieldAgent
 from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.agents.system_agent import SystemAgent
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.action import Action
 from heron.envs.base import HeronEnv
 from heron.protocols.vertical import VerticalProtocol
@@ -34,7 +34,7 @@ from heron.adaptors.rllib import RLlibBasedHeronEnv
 # =============================================================================
 
 @dataclass(slots=True)
-class DevicePowerFeature(FeatureProvider):
+class DevicePowerFeature(Feature):
     """Power state feature for devices."""
     visibility: ClassVar[Sequence[str]] = ["public"]
 
@@ -62,7 +62,7 @@ class DeviceAgent(FieldAgent):
     def capacity(self) -> float:
         return self.state.features["DevicePowerFeature"].capacity
 
-    def init_action(self, features: List[FeatureProvider] = []):
+    def init_action(self, features: List[Feature] = []):
         action = Action()
         action.set_specs(dim_c=1, range=(np.array([-1.0]), np.array([1.0])))
         action.set_values(np.array([0.0]))

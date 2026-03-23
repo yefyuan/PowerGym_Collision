@@ -29,7 +29,7 @@ import numpy as np
 from heron.agents.field_agent import FieldAgent
 from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.core.action import Action
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.policies import Policy, obs_to_vector, vector_to_action
 from heron.envs.simple import SimpleEnv
 
@@ -39,7 +39,7 @@ from heron.envs.simple import SimpleEnv
 # ---------------------------------------------------------------------------
 
 @dataclass(slots=True)
-class RoomTempFeature(FeatureProvider):
+class RoomTempFeature(Feature):
     """Room temperature (public so coordinator can observe it)."""
     visibility: ClassVar[Sequence[str]] = ["public"]
     temp: float = 20.0
@@ -49,7 +49,7 @@ class RoomTempFeature(FeatureProvider):
 class Thermostat(FieldAgent):
     """Thermostat that adjusts heating power."""
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         action = Action()
         action.set_specs(dim_c=1, range=(np.array([-1.0]), np.array([1.0])))
         return action

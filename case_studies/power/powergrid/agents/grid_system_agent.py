@@ -7,10 +7,10 @@ PowerGridAgent (coordinator) instances following Heron's agent hierarchy.
 from typing import Any, Dict as DictType, List, Optional
 
 from heron.agents.system_agent import SystemAgent
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.policies import Policy
 from heron.protocols.base import Protocol, NoProtocol
-from heron.scheduling.tick_config import TickConfig
+from heron.scheduling.schedule_config import ScheduleConfig
 from heron.utils.typing import AgentID
 from powergrid.agents.power_grid_agent import PowerGridAgent
 from powergrid.core.features.system import (
@@ -43,9 +43,9 @@ class GridSystemAgent(SystemAgent):
         self,
         agent_id: Optional[AgentID] = None,
         subordinates: Optional[DictType[AgentID, PowerGridAgent]] = None,
-        features: Optional[List[FeatureProvider]] = None,
+        features: Optional[List[Feature]] = None,
         env_id: Optional[str] = None,
-        tick_config: Optional[TickConfig] = None,
+        schedule_config: Optional[ScheduleConfig] = None,
         policy: Optional[Policy] = None,
         protocol: Optional[Protocol] = None,
     ):
@@ -56,7 +56,7 @@ class GridSystemAgent(SystemAgent):
             subordinates: PowerGridAgent instances to manage
             features: Additional system-level features
             env_id: Environment ID
-            tick_config: Timing configuration for event-driven scheduling
+            schedule_config: Timing configuration for event-driven scheduling
             policy: System-level policy
             protocol: System-level coordination protocol
         """
@@ -73,7 +73,7 @@ class GridSystemAgent(SystemAgent):
             features=all_features,
             subordinates=subordinates or {},
             env_id=env_id,
-            tick_config=tick_config,
+            schedule_config=schedule_config,
             policy=policy,
             protocol=protocol or NoProtocol(),
         )

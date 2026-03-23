@@ -35,7 +35,7 @@ from ray.rllib.policy.policy import PolicySpec
 
 from heron.adaptors.rllib import RLlibBasedHeronEnv
 from heron.adaptors.rllib_runner import HeronEnvRunner
-from heron.scheduling import TickConfig, JitterType
+from heron.scheduling import ScheduleConfig, JitterType
 
 def main():
 
@@ -61,8 +61,8 @@ def main():
                             "agent_id": f"drone_{f}_{d}", 
                             "agent_cls": TransportDrone,
                             "features": [DronePositionFeature(y_pos=0.2 + 0.3 * d)],
-                            # Optional per-agent tick config with jitter (overrides DEFAULT_FIELD_AGENT_TICK_CONFIG)
-                            "tick_config": TickConfig.with_jitter(
+                            # Optional per-agent tick config with jitter (overrides DEFAULT_FIELD_AGENT_SCHEDULE_CONFIG)
+                            "schedule_config": ScheduleConfig.with_jitter(
                                 tick_interval=0.5,    # Field agents tick every 0.5 seconds
                                 obs_delay=0.05,       # 50ms observation delay
                                 act_delay=0.05,       # 50ms action delay
@@ -79,8 +79,8 @@ def main():
                         {
                             "coordinator_id": f"fleet_{f}", 
                             "agent_cls": TransportCoordinator,
-                            # Optional per-coordinator tick config with jitter (overrides DEFAULT_COORDINATOR_AGENT_TICK_CONFIG)
-                            "tick_config": TickConfig.with_jitter(
+                            # Optional per-coordinator tick config with jitter (overrides DEFAULT_COORDINATOR_AGENT_SCHEDULE_CONFIG)
+                            "schedule_config": ScheduleConfig.with_jitter(
                                 tick_interval=1.0,    # Coordinators tick every 1 second
                                 obs_delay=0.05,
                                 act_delay=0.1,
@@ -93,9 +93,9 @@ def main():
                         }
                         for f in range(2)
                     ],
-                    # Optional top-level system tick config with jitter (overrides DEFAULT_SYSTEM_AGENT_TICK_CONFIG)
+                    # Optional top-level system tick config with jitter (overrides DEFAULT_SYSTEM_AGENT_SCHEDULE_CONFIG)
                     "system": {
-                        "tick_config": TickConfig.with_jitter(
+                        "schedule_config": ScheduleConfig.with_jitter(
                             tick_interval=2.0,    # System tick every 2 seconds
                             obs_delay=0.05,
                             act_delay=0.1,

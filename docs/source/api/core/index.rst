@@ -99,11 +99,11 @@ State
 
    Base state container with feature composition.
 
-   .. py:method:: add_feature(name: str, feature: FeatureProvider)
+   .. py:method:: add_feature(name: str, feature: Feature)
 
       Add a feature to the state.
 
-   .. py:method:: get_feature(name: str) -> FeatureProvider
+   .. py:method:: get_feature(name: str) -> Feature
 
       Get feature by name.
 
@@ -142,7 +142,7 @@ State
 Feature
 -------
 
-.. py:class:: heron.core.feature.FeatureProvider(visibility: list[str] = None)
+.. py:class:: heron.core.feature.Feature(visibility: list[str] = None)
 
    Base class for composable features with visibility control.
 
@@ -174,10 +174,10 @@ Feature
 
    .. code-block:: python
 
-      from heron.core.feature import FeatureProvider
+      from heron.core.feature import Feature
       import numpy as np
 
-      class TemperatureFeature(FeatureProvider):
+      class TemperatureFeature(Feature):
           def __init__(self, value: float = 20.0):
               super().__init__(visibility=["owner", "coordinator"])
               self.value = value

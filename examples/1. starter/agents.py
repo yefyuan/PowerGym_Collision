@@ -8,7 +8,7 @@ from gymnasium.spaces import Box
 from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.agents.field_agent import FieldAgent
 from heron.core.action import Action
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.protocols.vertical import VerticalProtocol
 
 from features import FleetSafetyFeature
@@ -19,7 +19,7 @@ NUM_DRONES_PER_FLEET = 3
 class TransportDrone(FieldAgent):
     """Drone whose velocity is set by the coordinator."""
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         action = Action()
         action.set_specs(dim_c=1, range=(np.array([-1.0]), np.array([1.0])))
         return action
@@ -70,7 +70,7 @@ class TransportCoordinator(CoordinatorAgent):
         self.observation_space = Box(-np.inf, np.inf, (2,), np.float32)
         self.action_space = self.action.space
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         action = Action()
         action.set_specs(
             dim_c=NUM_DRONES_PER_FLEET,

@@ -2,27 +2,27 @@ from dataclasses import fields, asdict, MISSING
 from typing import Any, ClassVar, Dict, List, Sequence, Type, TypeVar
 import numpy as np
 
-T = TypeVar("T", bound="FeatureProvider")
+T = TypeVar("T", bound="Feature")
 
 # Global feature registry for State.from_dict() reconstruction
-_FEATURE_REGISTRY: Dict[str, Type["FeatureProvider"]] = {}
+_FEATURE_REGISTRY: Dict[str, Type["Feature"]] = {}
 
 
 class FeatureMeta(type):
-    """Metaclass that auto-registers FeatureProvider subclasses."""
+    """Metaclass that auto-registers Feature subclasses."""
 
     def __new__(mcs, name, bases, namespace, **kwargs):
         cls = super().__new__(mcs, name, bases, namespace, **kwargs)
 
-        # Auto-register all FeatureProvider subclasses (but not FeatureProvider itself)
-        # Check if the class being created (name) is not FeatureProvider AND has FeatureProvider as a base
-        if name != 'FeatureProvider' and bases:
+        # Auto-register all Feature subclasses (but not Feature itself)
+        # Check if the class being created (name) is not Feature AND has Feature as a base
+        if name != 'Feature' and bases:
             _FEATURE_REGISTRY[name] = cls
 
         return cls
 
 
-class FeatureProvider(metaclass=FeatureMeta):
+class Feature(metaclass=FeatureMeta):
     """Base class for feature providers.
 
     Subclasses should:
@@ -32,7 +32,7 @@ class FeatureProvider(metaclass=FeatureMeta):
 
     Example:
         @dataclass(slots=True)
-        class MyFeature(FeatureProvider):
+        class MyFeature(Feature):
             visibility: ClassVar[Sequence[str]] = ["public"]
             value: float = 0.0
     """
@@ -53,7 +53,7 @@ class FeatureProvider(metaclass=FeatureMeta):
             return self._instance_feature_name
         return self._class_feature_name
 
-    def set_feature_name(self, name: str) -> "FeatureProvider":
+    def set_feature_name(self, name: str) -> "Feature":
         """Set a custom instance-level feature name. Returns self for chaining."""
         self._instance_feature_name = name
         return self
@@ -137,7 +137,7 @@ class FeatureProvider(metaclass=FeatureMeta):
 
 
 # Registry access functions
-def get_feature_class(feature_name: str) -> Type[FeatureProvider]:
+def get_feature_class(feature_name: str) -> Type[Feature]:
     """Get feature class by name from registry.
 
     Args:
@@ -154,7 +154,7 @@ def get_feature_class(feature_name: str) -> Type[FeatureProvider]:
     return _FEATURE_REGISTRY[feature_name]
 
 
-def get_all_registered_features() -> Dict[str, Type[FeatureProvider]]:
+def get_all_registered_features() -> Dict[str, Type[Feature]]:
     """Get all registered feature classes.
 
     Returns:

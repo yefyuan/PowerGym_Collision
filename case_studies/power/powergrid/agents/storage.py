@@ -14,10 +14,10 @@ import numpy as np
 from powergrid.agents.device_agent import DeviceAgent
 from powergrid.core.features.metrics import CostSafetyMetrics
 from heron.core.action import Action
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.policies import Policy
 from heron.protocols.base import Protocol
-from heron.scheduling.tick_config import TickConfig
+from heron.scheduling.schedule_config import ScheduleConfig
 from heron.utils.typing import AgentID
 from powergrid.core.features.electrical import ElectricalBasePh
 from powergrid.core.features.power_limits import PowerLimits
@@ -78,7 +78,7 @@ class ESS(DeviceAgent):
         # Hierarchy params
         upstream_id: Optional[AgentID] = None,
         env_id: Optional[str] = None,
-        tick_config: Optional[TickConfig] = None,
+        schedule_config: Optional[ScheduleConfig] = None,
         policy: Optional[Policy] = None,
         protocol: Optional[Protocol] = None,
     ):
@@ -105,7 +105,7 @@ class ESS(DeviceAgent):
             phase_spec: Phase specification dict
             upstream_id: Parent agent ID
             env_id: Environment ID
-            tick_config: Timing configuration
+            schedule_config: Timing configuration
             policy: Agent policy
             protocol: Coordination protocol
         """
@@ -159,12 +159,12 @@ class ESS(DeviceAgent):
             features=features,
             upstream_id=upstream_id,
             env_id=env_id,
-            tick_config=tick_config,
+            schedule_config=schedule_config,
             policy=policy,
             protocol=protocol,
         )
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         """Initialize normalized [-1, 1] action space.
 
         Action dimensions:

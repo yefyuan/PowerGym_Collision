@@ -3,12 +3,12 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.utils.array_utils import cat_f32
 
 
 @dataclass(slots=True)
-class StorageBlock(FeatureProvider):
+class StorageBlock(Feature):
     """
     Energy storage state, static limits, and simple degradation accounting.
 
@@ -184,7 +184,7 @@ class StorageBlock(FeatureProvider):
         self.degr_cost_cum = max(0.0, self.degr_cost_cum)
 
     # ------------------------------------------------------------
-    # FeatureProvider API
+    # Feature API
     # ------------------------------------------------------------
 
     def reset(

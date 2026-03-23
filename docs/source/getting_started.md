@@ -28,13 +28,13 @@ Create a simple hierarchical agent system:
 ```python
 from heron.agents import FieldAgent, CoordinatorAgent
 from heron.core.state import FieldAgentState
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.observation import Observation
 from heron.core.action import Action
 import numpy as np
 
 # 1. Define a feature
-class SensorFeature(FeatureProvider):
+class SensorFeature(Feature):
     def __init__(self, value: float = 0.0):
         super().__init__(visibility=["owner", "coordinator"])
         self.value = value

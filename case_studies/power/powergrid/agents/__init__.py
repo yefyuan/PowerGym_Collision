@@ -16,8 +16,8 @@ from powergrid.agents.transformer import Transformer
 from powergrid.agents.power_grid_agent import PowerGridAgent
 from powergrid.agents.grid_system_agent import GridSystemAgent
 
-# Import ProxyAgent from heron (no custom implementation needed)
-from heron.agents.proxy_agent import ProxyAgent, PROXY_LEVEL
+# Import Proxy from heron (no custom implementation needed)
+from heron.agents.proxy_agent import Proxy, PROXY_LEVEL
 
 # Power grid uses "power_flow" as the channel type for power flow results
 POWER_FLOW_CHANNEL_TYPE = "power_flow"
@@ -33,7 +33,7 @@ __all__ = [
     "PowerGridAgent",
     "GridSystemAgent",
     # From heron
-    "ProxyAgent",
+    "Proxy",
     "PROXY_LEVEL",
     # Constants
     "POWER_FLOW_CHANNEL_TYPE",

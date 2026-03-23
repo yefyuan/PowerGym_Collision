@@ -23,7 +23,7 @@ graph TB
         end
 
         subgraph "State Mediation"
-            PA[ProxyAgent<br/>State Cache + Visibility Filter]
+            PA[Proxy<br/>State Cache + Visibility Filter]
         end
 
         subgraph "Communication"
@@ -80,7 +80,7 @@ sequenceDiagram
     participant SYS as SystemAgent
     participant COORD as CoordinatorAgent
     participant FA as FieldAgent
-    participant PX as ProxyAgent
+    participant PX as Proxy
 
     RL->>Env: step(actions)
     Env->>SYS: execute(actions, proxy)
@@ -140,7 +140,7 @@ sequenceDiagram
     participant SYS as SystemAgent
     participant COORD as CoordinatorAgent
     participant FA as FieldAgent
-    participant PX as ProxyAgent
+    participant PX as Proxy
     participant BK as MessageBroker
 
     Note over ENV: env.run_event_driven(t_end)
@@ -241,16 +241,16 @@ sequenceDiagram
 
 ---
 
-## 3. ProxyAgent: State Mediation Hub
+## 3. Proxy: State Mediation Hub
 
 ```mermaid
 graph TB
-    subgraph "ProxyAgent State Cache"
+    subgraph "Proxy State Cache"
         direction TB
         SC["state_cache['agents']"]
         GC["state_cache['global']"]
 
-        SC --> S1["battery_1: FieldAgentState<br/>features: Dict[str, FeatureProvider]"]
+        SC --> S1["battery_1: FieldAgentState<br/>features: Dict[str, Feature]"]
         SC --> S2["battery_2: FieldAgentState"]
         SC --> S3["coordinator_1: CoordAgentState"]
         SC --> S4["system_agent: SystemAgentState"]
@@ -285,7 +285,7 @@ graph TB
     style VF fill:#e74c3c,color:#fff
 ```
 
-**Novelty:** The ProxyAgent acts as a **single gatekeeper** for all state access, enforcing visibility rules at the feature level. This prevents the common "global state leak" problem in MARL benchmarks where agents inadvertently access information they shouldn't see. No existing framework provides this mediated access pattern.
+**Novelty:** The Proxy acts as a **single gatekeeper** for all state access, enforcing visibility rules at the feature level. This prevents the common "global state leak" problem in MARL benchmarks where agents inadvertently access information they shouldn't see. No existing framework provides this mediated access pattern.
 
 ---
 
@@ -337,7 +337,7 @@ graph LR
 ```mermaid
 flowchart TD
     subgraph SystemAgent["SystemAgent (L3)"]
-        S_OBS["Observe via ProxyAgent"]
+        S_OBS["Observe via Proxy"]
         S_POL["Policy.forward(obs)"]
         S_COORD["Protocol.coordinate()"]
         S_SEND["send_subordinate_action()"]
@@ -407,7 +407,7 @@ flowchart TD
 ```mermaid
 graph TB
     subgraph "Agent Layer (Rich Objects)"
-        STATE["State Object<br/>features: Dict[str, FeatureProvider]<br/>e.g. {'BatterySOC': FeatureProvider(soc=0.5)}"]
+        STATE["State Object<br/>features: Dict[str, Feature]<br/>e.g. {'BatterySOC': Feature(soc=0.5)}"]
         ACTION["Action Object<br/>c: np.array, d: np.array"]
         OBS["Observation Object<br/>local: Dict, global_info: Dict"]
     end
@@ -451,7 +451,7 @@ graph TB
     style VIS fill:#e67e22,color:#fff
 ```
 
-**Key principle:** Serialization only happens at message boundaries. In CTDE mode, State objects pass by reference to the ProxyAgent — zero serialization overhead during training.
+**Key principle:** Serialization only happens at message boundaries. In CTDE mode, State objects pass by reference to the Proxy — zero serialization overhead during training.
 
 ---
 
@@ -534,7 +534,7 @@ graph TB
         ET5["OBSERVATION_READY, ENV_UPDATE,<br/>CUSTOM → default (0)"]
     end
 
-    subgraph "TickConfig (Per-Agent)"
+    subgraph "ScheduleConfig (Per-Agent)"
         TC["tick_interval: 1.0s<br/>obs_delay: 0.1s<br/>act_delay: 0.2s<br/>msg_delay: 0.05s<br/>reward_delay: 0.1s<br/>jitter: GAUSSIAN, 10%"]
     end
 
@@ -599,7 +599,7 @@ flowchart TB
 ```mermaid
 sequenceDiagram
     participant FA as FieldAgent
-    participant PX as ProxyAgent
+    participant PX as Proxy
     participant COORD as CoordinatorAgent
     participant SYS as SystemAgent
 
@@ -655,7 +655,7 @@ graph LR
     subgraph "HERON"
         direction TB
         ENV2["Environment"]
-        PROXY["ProxyAgent<br/>(state mediation)"]
+        PROXY["Proxy<br/>(state mediation)"]
         AGENTS["Agent Hierarchy<br/>(3 levels)"]
         SCHED["EventScheduler<br/>(dual modes)"]
         PROTO["Protocols<br/>(composable)"]
@@ -698,7 +698,7 @@ graph TB
         COORD1 -->|"env_0__action__coord1_to_field1"| F1["FieldAgent 1"]
         COORD1 -->|"env_0__action__coord1_to_field2"| F2["FieldAgent 2"]
 
-        F1 -.->|"env_0__info__field1_to_proxy"| PX["ProxyAgent"]
+        F1 -.->|"env_0__info__field1_to_proxy"| PX["Proxy"]
         F2 -.->|"env_0__info__field2_to_proxy"| PX
         PX -.->|"env_0__info__proxy_to_field1"| F1
         PX -.->|"env_0__info__proxy_to_field2"| F2
@@ -772,7 +772,7 @@ flowchart LR
 | # | Contribution | What It Enables | Why Existing Frameworks Can't Do It |
 |---|-------------|----------------|-------------------------------------|
 | 1 | **Dual execution modes** (sync + event-driven) | Train with CTDE, test with realistic CPS timing | Requires fundamentally different execution loop, not achievable by wrapping |
-| 2 | **ProxyAgent state mediation** | Prevents global state leak, enforces visibility | No existing framework has a centralized state gatekeeper |
+| 2 | **Proxy state mediation** | Prevents global state leak, enforces visibility | No existing framework has a centralized state gatekeeper |
 | 3 | **4-level feature visibility** | Ablation over information structures | Existing frameworks offer binary (full/partial) observability |
 | 4 | **Composable protocol system** | Swap coordination without changing agents | No framework separates communication from action coordination |
 | 5 | **Agent-paced EventScheduler** | CPS-calibrated timing as experimental variable | All existing frameworks assume synchronous stepping |

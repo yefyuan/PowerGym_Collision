@@ -3,13 +3,13 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from powergrid.utils.phase import PhaseModel, PhaseSpec
 from powergrid.utils.typing import CtrlMode
 
 
 @dataclass(slots=True)
-class InverterBasedSource(FeatureProvider):
+class InverterBasedSource(Feature):
     """
     Inverter-based renewable (PV / wind).
     Active power largely exogenous; reactive controlled.

@@ -12,10 +12,10 @@ from typing import Any, List, Optional
 
 from heron.agents.field_agent import FieldAgent
 from heron.core.action import Action
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.policies import Policy
 from heron.protocols.base import Protocol
-from heron.scheduling.tick_config import TickConfig
+from heron.scheduling.schedule_config import ScheduleConfig
 from heron.utils.typing import AgentID
 from powergrid.core.features.metrics import CostSafetyMetrics
 
@@ -39,10 +39,10 @@ class DeviceAgent(FieldAgent):
     def __init__(
         self,
         agent_id: AgentID,
-        features: List[FeatureProvider],
+        features: List[Feature],
         upstream_id: Optional[AgentID] = None,
         env_id: Optional[str] = None,
-        tick_config: Optional[TickConfig] = None,
+        schedule_config: Optional[ScheduleConfig] = None,
         policy: Optional[Policy] = None,
         protocol: Optional[Protocol] = None,
     ):
@@ -53,7 +53,7 @@ class DeviceAgent(FieldAgent):
             features: List of feature providers (pre-initialized)
             upstream_id: Parent agent ID in hierarchy
             env_id: Environment ID
-            tick_config: Timing configuration
+            schedule_config: Timing configuration
             policy: Agent policy
             protocol: Coordination protocol
         """
@@ -67,13 +67,13 @@ class DeviceAgent(FieldAgent):
             features=features,
             upstream_id=upstream_id,
             env_id=env_id,
-            tick_config=tick_config,
+            schedule_config=schedule_config,
             protocol=protocol,
             policy=policy,
         )
 
     @abstractmethod
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         """Initialize action space.
 
         Subclasses define:

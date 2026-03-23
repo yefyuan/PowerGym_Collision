@@ -4,12 +4,12 @@ from typing import Any, Dict, List, Optional
 import numpy as np
 
 from powergrid.utils.phase import PhaseModel, PhaseSpec, check_phase_model_consistency
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.utils.array_utils import cat_f32
 
 
 @dataclass(slots=True)
-class ElectricalBasePh(FeatureProvider):
+class ElectricalBasePh(Feature):
     """
     Phase-aware electrical fundamentals at a connection point.
 
@@ -159,7 +159,7 @@ class ElectricalBasePh(FeatureProvider):
         raise ValueError(f"Unsupported phase model: {self.phase_model}")
 
     # ------------------------------------------------------------
-    # FeatureProvider API
+    # Feature API
     # ------------------------------------------------------------
 
     def reset(self, **overrides: Any) -> "ElectricalBasePh":

@@ -8,12 +8,12 @@ import gymnasium as gym
 import numpy as np
 
 if TYPE_CHECKING:
-    from heron.agents.proxy_agent import ProxyAgent
+    from heron.agents.proxy_agent import Proxy
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.messaging import MessageBroker, ChannelManager, Message as BrokerMessage, MessageType
 from heron.utils.typing import AgentID
-from heron.scheduling.tick_config import TickConfig, JitterType
+from heron.scheduling.schedule_config import ScheduleConfig, JitterType
 from heron.scheduling.scheduler import EventScheduler
 from heron.scheduling.event import Event, EventType, EVENT_TYPE_FROM_STRING
 from heron.core.policies import Policy
@@ -50,7 +50,7 @@ class Agent(ABC):
         self,
         agent_id: AgentID,
         level: int = 1,
-        features: Optional[List[FeatureProvider]] = None,
+        features: Optional[List[Feature]] = None,
         observation_space: Optional[gym.Space] = None,
         action_space: Optional[gym.Space] = None,
         # hierarchy params
@@ -58,7 +58,7 @@ class Agent(ABC):
         subordinates: Optional[Dict[AgentID, "Agent"]] = None,
         env_id: Optional[str] = None,
         # timing config (for event-driven scheduling)
-        tick_config: Optional[TickConfig] = None,
+        schedule_config: Optional[ScheduleConfig] = None,
         # execution params
         policy: Optional[Policy] = None,
         # coordination params
@@ -80,8 +80,8 @@ class Agent(ABC):
         # Message broker reference (set by environment in distributed mode)
         self._message_broker: Optional[MessageBroker] = None
 
-        # Timing configuration (via TickConfig)
-        self._tick_config = tick_config or TickConfig.deterministic()
+        # Timing configuration (via ScheduleConfig)
+        self._schedule_config = schedule_config or ScheduleConfig.deterministic()
 
         # Hierarchy structure (used by coordinators)
         self.env_id = env_id
@@ -100,7 +100,7 @@ class Agent(ABC):
         return subordinates
 
     @abstractmethod
-    def init_state(self, features: List[FeatureProvider] = []) -> State:
+    def init_state(self, features: List[Feature] = []) -> State:
         """Initialize the agent's State object from the given features.
 
         Args:
@@ -109,7 +109,7 @@ class Agent(ABC):
         pass
 
     @abstractmethod
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         """Initialize the agent's Action object.
 
         Args:
@@ -125,7 +125,7 @@ class Agent(ABC):
     def set_action(self, action: Any, *args, **kwargs) -> None:
         pass
 
-    def post_proxy_attach(self, proxy: "ProxyAgent") -> None:
+    def post_proxy_attach(self, proxy: "Proxy") -> None:
         """Hook for any additional setup after proxy attachment and global state initialization."""
         pass
 
@@ -135,7 +135,7 @@ class Agent(ABC):
     # - execute: Synchronous Execution (for Training phase)
     # - tick: Event-Driven Execution (for Testing phase)
     # ============================================
-    def reset(self, *, seed: Optional[int] = None, proxy: Optional["ProxyAgent"] = None, **kwargs) -> Any:
+    def reset(self, *, seed: Optional[int] = None, proxy: Optional["Proxy"] = None, **kwargs) -> Any:
         self._timestep = 0.0
         self.action.reset(**kwargs)  # Reset action to initial values, with optional overrides
         self.state.reset(**kwargs)  # Reset state to initial values, with optional overrides
@@ -150,7 +150,7 @@ class Agent(ABC):
         for subordinate in self.subordinates.values():
             subordinate.reset(seed=seed, proxy=proxy, **kwargs)
 
-    def execute(self, actions: Dict[AgentID, Any], proxy: Optional["ProxyAgent"] = None) -> None:
+    def execute(self, actions: Dict[AgentID, Any], proxy: Optional["Proxy"] = None) -> None:
         """Execute actions in CTDE mode. [Training Mode]
 
         Default implementation:
@@ -181,7 +181,7 @@ class Agent(ABC):
     # ============================================
     # Observation related functions
     # ============================================
-    def observe(self, global_state: Optional[Dict[str, Any]] = None, proxy: Optional["ProxyAgent"] = None, *args, **kwargs) -> Dict[AgentID, Any]:
+    def observe(self, global_state: Optional[Dict[str, Any]] = None, proxy: Optional["Proxy"] = None, *args, **kwargs) -> Dict[AgentID, Any]:
         """Collect observations for this agent and all subordinates.
 
         Returns a flat dict mapping each agent ID to its Observation vector,
@@ -189,7 +189,7 @@ class Agent(ABC):
 
         Args:
             global_state: Optional global state dict (unused in default impl)
-            proxy: ProxyAgent used to retrieve observations
+            proxy: Proxy used to retrieve observations
 
         Returns:
             Dict mapping agent IDs to observation arrays
@@ -206,13 +206,13 @@ class Agent(ABC):
     # ============================================
     # Reward related functions
     # ============================================
-    def compute_rewards(self, proxy: "ProxyAgent") -> Dict[AgentID, float]:
+    def compute_rewards(self, proxy: "Proxy") -> Dict[AgentID, float]:
         """Compute rewards for this agent and all subordinates.
 
         Retrieves local state from proxy and delegates to compute_local_reward().
 
         Args:
-            proxy: ProxyAgent for state retrieval
+            proxy: Proxy for state retrieval
 
         Returns:
             Dict mapping agent IDs to scalar rewards
@@ -240,13 +240,13 @@ class Agent(ABC):
     # ============================================
     # Info related functions
     # ============================================
-    def get_info(self, proxy: "ProxyAgent") -> Dict[AgentID, Dict]:
+    def get_info(self, proxy: "Proxy") -> Dict[AgentID, Dict]:
         """Collect info dicts for this agent and all subordinates.
 
         Retrieves local state from proxy and delegates to get_local_info().
 
         Args:
-            proxy: ProxyAgent for state retrieval
+            proxy: Proxy for state retrieval
 
         Returns:
             Dict mapping agent IDs to info dicts
@@ -289,11 +289,11 @@ class Agent(ABC):
     # ============================================
     # terminateds related functions
     # ============================================
-    def get_terminateds(self, proxy: "ProxyAgent") -> Dict[AgentID, bool]:
+    def get_terminateds(self, proxy: "Proxy") -> Dict[AgentID, bool]:
         """Collect termination flags for this agent and all subordinates.
 
         Args:
-            proxy: ProxyAgent for state retrieval
+            proxy: Proxy for state retrieval
 
         Returns:
             Dict mapping agent IDs to termination booleans
@@ -318,11 +318,11 @@ class Agent(ABC):
     # ============================================
     # truncateds related functions
     # ============================================
-    def get_truncateds(self, proxy: "ProxyAgent") -> Dict[AgentID, bool]:
+    def get_truncateds(self, proxy: "Proxy") -> Dict[AgentID, bool]:
         """Collect truncation flags for this agent and all subordinates.
 
         Args:
-            proxy: ProxyAgent for state retrieval
+            proxy: Proxy for state retrieval
 
         Returns:
             Dict mapping agent IDs to truncation booleans
@@ -356,10 +356,10 @@ class Agent(ABC):
         Args:
             step: 1-indexed env step number.
         """
-        period = max(1, round(self._tick_config.tick_interval))
+        period = max(1, round(self._schedule_config.tick_interval))
         return step % period == 0
 
-    def act(self, actions: Dict[str, Any], proxy: Optional["ProxyAgent"] = None) -> None:
+    def act(self, actions: Dict[str, Any], proxy: Optional["Proxy"] = None) -> None:
         self._timestep += 1
 
         # run self action & store local state updates in proxy
@@ -392,7 +392,7 @@ class Agent(ABC):
             }
         }
 
-    def handle_self_action(self, action: Any, proxy: Optional["ProxyAgent"] = None):
+    def handle_self_action(self, action: Any, proxy: Optional["Proxy"] = None):
         """Handle this agent's own action.
 
         If the agent is inactive at the current timestep (determined by
@@ -416,7 +416,7 @@ class Agent(ABC):
             raise ValueError("We cannot find appropriate agent state, double check your state update logic")
         proxy.set_local_state(self.agent_id, self.state)
 
-    def handle_subordinate_actions(self, actions: Dict[AgentID, Any], proxy: Optional["ProxyAgent"] = None):
+    def handle_subordinate_actions(self, actions: Dict[AgentID, Any], proxy: Optional["Proxy"] = None):
         # Use protocol to produce subordinate actions (mirrors event-driven coordinate()).
         # This allows parent-controlled action decomposition (e.g., broadcast, vector split)
         # in training mode, not just event-driven mode.
@@ -483,14 +483,14 @@ class Agent(ABC):
     # (e.g. message delivery), but not when to trigger these events. The latter is determined by the scheduler and 
     # the tick configuration (e.g. tick interval, message delay, etc.) that defines the timing of event scheduling.
     @property
-    def tick_config(self) -> TickConfig:
+    def schedule_config(self) -> ScheduleConfig:
         """Get the tick configuration for this agent."""
-        return self._tick_config
+        return self._schedule_config
 
-    @tick_config.setter
-    def tick_config(self, config: TickConfig) -> None:
+    @schedule_config.setter
+    def schedule_config(self, config: ScheduleConfig) -> None:
         """Set the tick configuration for this agent."""
-        self._tick_config = config
+        self._schedule_config = config
 
 
     def enable_jitter(
@@ -501,7 +501,7 @@ class Agent(ABC):
     ) -> None:
         """Enable jitter for testing mode.
 
-        Converts current tick_config to use jitter with same base values.
+        Converts current schedule_config to use jitter with same base values.
 
         Args:
             jitter_type: Distribution type for jitter (default: GAUSSIAN)
@@ -511,11 +511,11 @@ class Agent(ABC):
         if jitter_type is None:
             jitter_type = JitterType.GAUSSIAN
 
-        self._tick_config = TickConfig.with_jitter(
-            tick_interval=self._tick_config.tick_interval,
-            obs_delay=self._tick_config.obs_delay,
-            act_delay=self._tick_config.act_delay,
-            msg_delay=self._tick_config.msg_delay,
+        self._schedule_config = ScheduleConfig.with_jitter(
+            tick_interval=self._schedule_config.tick_interval,
+            obs_delay=self._schedule_config.obs_delay,
+            act_delay=self._schedule_config.act_delay,
+            msg_delay=self._schedule_config.msg_delay,
             jitter_type=jitter_type,
             jitter_ratio=jitter_ratio,
             seed=seed,
@@ -523,11 +523,11 @@ class Agent(ABC):
 
     def disable_jitter(self) -> None:
         """Disable jitter (switch to deterministic mode)."""
-        self._tick_config = TickConfig.deterministic(
-            tick_interval=self._tick_config.tick_interval,
-            obs_delay=self._tick_config.obs_delay,
-            act_delay=self._tick_config.act_delay,
-            msg_delay=self._tick_config.msg_delay,
+        self._schedule_config = ScheduleConfig.deterministic(
+            tick_interval=self._schedule_config.tick_interval,
+            obs_delay=self._schedule_config.obs_delay,
+            act_delay=self._schedule_config.act_delay,
+            msg_delay=self._schedule_config.msg_delay,
         )
 
     def _check_for_upstream_action(self) -> None:
@@ -570,7 +570,7 @@ class Agent(ABC):
             # if action is not None, apply it to update state and sync with proxy
             scheduler.schedule_action_effect(
                 agent_id=self.agent_id,
-                delay=self._tick_config.act_delay,
+                delay=self._schedule_config.act_delay,
             )
 
     # ============================================

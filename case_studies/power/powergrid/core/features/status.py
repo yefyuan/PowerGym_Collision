@@ -3,12 +3,12 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.utils.array_utils import cat_f32
 
 
 @dataclass(slots=True)
-class StatusBlock(FeatureProvider):
+class StatusBlock(Feature):
     """
     Status / lifecycle block with optional categorical state.
 
@@ -212,7 +212,7 @@ class StatusBlock(FeatureProvider):
         return value is not None
 
     # ------------------------------------------------------------
-    # FeatureProvider API
+    # Feature API
     # ------------------------------------------------------------
 
     def reset(

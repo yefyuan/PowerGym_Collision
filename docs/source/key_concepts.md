@@ -42,9 +42,9 @@ system = SystemAgent(
 Features are composable state components with visibility control:
 
 ```python
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 
-class TemperatureFeature(FeatureProvider):
+class TemperatureFeature(Feature):
     def __init__(self, value: float):
         # Visibility tags control who can see this feature
         super().__init__(visibility=["owner", "coordinator"])
@@ -218,7 +218,7 @@ Agents can be configured with timing parameters for event-driven execution:
 
 ```python
 from heron.agents import FieldAgent
-from heron.scheduling import TickConfig, JitterType
+from heron.scheduling import ScheduleConfig, JitterType
 
 # Simple timing parameters
 sensor = FieldAgent(
@@ -229,15 +229,15 @@ sensor = FieldAgent(
     msg_delay=0.05,       # Message delivery delay
 )
 
-# Full control with TickConfig (includes jitter for testing)
-config = TickConfig.with_jitter(
+# Full control with ScheduleConfig (includes jitter for testing)
+config = ScheduleConfig.with_jitter(
     tick_interval=1.0,
     obs_delay=0.1,
     jitter_type=JitterType.GAUSSIAN,
     jitter_ratio=0.1,     # 10% variability
     seed=42,
 )
-sensor = FieldAgent(agent_id="sensor_1", tick_config=config)
+sensor = FieldAgent(agent_id="sensor_1", schedule_config=config)
 ```
 
 **Timing parameter reference:**

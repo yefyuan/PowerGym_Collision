@@ -3,13 +3,13 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.utils.array_utils import as_f32, one_hot
 from powergrid.utils.phase import PhaseModel, PhaseSpec
 
 
 @dataclass(slots=True)
-class TapChangerPh(FeatureProvider):
+class TapChangerPh(Feature):
     """OLTC that can be balanced or per-phase."""
     phase_model: PhaseModel = PhaseModel.BALANCED_1PH
     phase_spec: Optional[PhaseSpec] = field(default_factory=PhaseSpec)

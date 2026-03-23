@@ -5,7 +5,7 @@ This example demonstrates how to create custom device agents for the power grid 
 ## What You'll Learn
 
 - Extending `DeviceAgent` for custom devices
-- Creating custom features with FeatureProvider
+- Creating custom features with Feature
 - Integrating custom devices into environments
 
 ## Creating a Custom Device
@@ -13,10 +13,10 @@ This example demonstrates how to create custom device agents for the power grid 
 ### Step 1: Define Custom Features
 
 ```python
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 import numpy as np
 
-class SolarFeature(FeatureProvider):
+class SolarFeature(Feature):
     """Feature for solar panel state."""
 
     def __init__(self, panel_area: float, efficiency: float):

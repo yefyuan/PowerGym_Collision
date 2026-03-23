@@ -15,7 +15,7 @@ This document provides a comprehensive analysis of how data flows through the HE
 7. [Message Passing Architecture](#message-passing-architecture)
 8. [CTDE Training Mode - Complete Flow](#ctde-training-mode---complete-flow)
 9. [Event-Driven Testing Mode - Complete Flow](#event-driven-testing-mode---complete-flow)
-10. [ProxyAgent State Cache Architecture](#proxyagent-state-cache-architecture)
+10. [Proxy State Cache Architecture](#proxyagent-state-cache-architecture)
 11. [Protocol-Based Coordination](#protocol-based-coordination)
 
 ---
@@ -26,20 +26,20 @@ This document provides a comprehensive analysis of how data flows through the HE
 
 | Component | Internal Representation | Storage in Proxy | Message Passing |
 |-----------|------------------------|------------------|-----------------|
-| **State** | State object (features as Dict[str, FeatureProvider]) | **State object** | Dict with metadata via `to_dict()` |
+| **State** | State object (features as Dict[str, Feature]) | **State object** | Dict with metadata via `to_dict()` |
 | **Action** | Action object | Not stored in proxy | Action object (direct) or Dict (messages) |
 | **Observation** | Observation object | Not stored (computed on-demand) | Dict via `obs.to_dict()` |
-| **Feature** | FeatureProvider object | Part of State.features Dict | Dict via `feature.to_dict()` |
+| **Feature** | Feature object | Part of State.features Dict | Dict via `feature.to_dict()` |
 | **Message** | Event payload Dict | Broker queues | Serialized payload |
 
 ### **Key Principles**
 
-**1. State.features is a Dict[str, FeatureProvider], keyed by feature_name:**
+**1. State.features is a Dict[str, Feature], keyed by feature_name:**
 - O(1) lookup by feature name: `state.features["BatteryChargeFeature"]`
-- Features maintain class identity (FeatureProvider instances)
+- Features maintain class identity (Feature instances)
 - Direct access to `state.observed_by()` for visibility filtering
 
-**2. ProxyAgent stores State objects directly** - This enables feature-level visibility filtering:
+**2. Proxy stores State objects directly** - This enables feature-level visibility filtering:
 - State objects maintained with full type information
 - Serialization needed only at message boundaries (State <-> Dict)
 
@@ -66,7 +66,7 @@ state = FieldAgentState(
 # State object attributes:
 state.owner_id = "battery_1"
 state.owner_level = 1
-state.features = {"BatteryChargeFeature": FeatureProvider}  # Dict keyed by name!
+state.features = {"BatteryChargeFeature": Feature}  # Dict keyed by name!
 ```
 
 ### **State Operations**
@@ -84,7 +84,7 @@ Agent.__init__()
 │   └─> Returns State object
 
 Example:
-    # Constructor receives features as List[FeatureProvider]
+    # Constructor receives features as List[Feature]
     features = [BatteryChargeFeature(soc=0.5, capacity=100.0)]
     # init_state converts to Dict:
     state.features = {"BatteryChargeFeature": BatteryChargeFeature(soc=0.5, capacity=100.0)}
@@ -242,7 +242,7 @@ def sync_state_from_observed(self, observed_state):
 │     features={"BatteryChargeFeature": BatteryChargeFeature(...)}│
 │ )                                                               │
 │                                                                 │
-│ Stores FULL State objects with FeatureProvider instances!        │
+│ Stores FULL State objects with Feature instances!        │
 └─────────────────────────────────────────────────────────────────┘
                             ↓ get_local_state() + visibility filtering
 ┌─────────────────────────────────────────────────────────────────┐
@@ -811,7 +811,7 @@ obs = Observation.from_dict(obs_dict)
 ### **Feature Object Structure**
 
 ```python
-class BatteryChargeFeature(FeatureProvider):
+class BatteryChargeFeature(Feature):
     visibility = ["public"]  # Class-level metadata
 
     soc: float = 0.5
@@ -831,7 +831,7 @@ feature.capacity = 100.0
 ```
 Agent.__init__() -> init_state(features=features_list)
 ├─> For each feature in features_list:
-│   └─> FeatureProvider object created
+│   └─> Feature object created
 │   └─> Auto-registered in _FEATURE_REGISTRY via FeatureMeta
 │
 ├─> self.state = FieldAgentState(
@@ -839,12 +839,12 @@ Agent.__init__() -> init_state(features=features_list)
 │       owner_level=1,
 │       features={f.feature_name: f for f in features_list}  # List -> Dict!
 │   )
-└─> State contains Dict of FeatureProvider objects keyed by name
+└─> State contains Dict of Feature objects keyed by name
 ```
 
 **Data Outflow:**
 ```
-FeatureProvider object -> Stored in state.features dict by name
+Feature object -> Stored in state.features dict by name
 ```
 
 **Feature access:**
@@ -990,7 +990,7 @@ proxy.get_observation("battery_1", protocol)
 ┌─────────────────────────────────────────────────────────────────┐
 │ Feature Definition (Class)                                      │
 ├─────────────────────────────────────────────────────────────────┤
-│ class BatteryChargeFeature(FeatureProvider):                    │
+│ class BatteryChargeFeature(Feature):                    │
 │     visibility = ["public"]                                     │
 │     soc: float = 0.5                                            │
 │     capacity: float = 100.0                                     │
@@ -1191,17 +1191,17 @@ def schedule_message_delivery(
 ```
 env = CustomEnv(system_agent=grid_system_agent)
 │
-├─> EnvCore.__init__()
+├─> BaseEnv.__init__()
 │   │
 │   ├─> _register_agents(system_agent, coordinator_agents)
 │   │   ├─> system_agent.set_simulation(run_simulation, ...)
 │   │   └─> _register_agent(system_agent) [recursive for all]
 │   │
-│   ├─> Create ProxyAgent(), register it
+│   ├─> Create Proxy(), register it
 │   │
 │   ├─> Setup MessageBroker, attach to agents
 │   │
-│   ├─> proxy_agent.attach(registered_agents)
+│   ├─> proxy.attach(registered_agents)
 │   │   ├─> For each agent:
 │   │   │   └─> _register_agent(agent)
 │   │   │       ├─> Track agent_id, level, upstream_id
@@ -1235,7 +1235,7 @@ obs, info = env.reset(seed=42)
 │
 ├─> scheduler.reset(start_time=0.0)
 ├─> clear_broker_environment()
-├─> proxy_agent.reset() -> state_cache = {}
+├─> proxy.reset() -> state_cache = {}
 │
 ├─> system_agent.reset(seed, proxy)
 │   ├─> Agent.reset():
@@ -1456,7 +1456,7 @@ SystemAgent.tick(scheduler, current_time=0.0)
 #### **t=msg_delay: MESSAGE_DELIVERY(proxy) - Observation Request**
 
 ```
-ProxyAgent.message_delivery_handler()
+Proxy.message_delivery_handler()
 │
 ├─> Receive: {MSG_GET_INFO: "obs", MSG_KEY_PROTOCOL: protocol}
 │
@@ -1611,7 +1611,7 @@ SystemAgent receives it first and propagates down the hierarchy.
        └─> schedule_message_delivery(
                sender=self.agent_id, recipient=proxy,
                message={MSG_GET_INFO: INFO_TYPE_LOCAL_STATE, MSG_KEY_PROTOCOL: protocol},
-               delay=self._tick_config.reward_delay
+               delay=self._schedule_config.reward_delay
            )
 
 2. CoordinatorAgent.message_delivery_handler() on MSG_SET_STATE_COMPLETION:
@@ -1627,7 +1627,7 @@ SystemAgent receives it first and propagates down the hierarchy.
        └─> schedule_message_delivery(
                sender=self.agent_id, recipient=proxy,
                message={MSG_GET_INFO: INFO_TYPE_LOCAL_STATE, MSG_KEY_PROTOCOL: protocol},
-               delay=self._tick_config.reward_delay
+               delay=self._schedule_config.reward_delay
            )
 
 3. FieldAgent.message_delivery_handler() on MSG_SET_STATE_COMPLETION:
@@ -1661,7 +1661,7 @@ SystemAgent receives it first and propagates down the hierarchy.
 
 ---
 
-## **ProxyAgent State Cache Architecture**
+## **Proxy State Cache Architecture**
 
 ### **Cache Structure**
 
@@ -1832,7 +1832,7 @@ Agent.compute_action(obs, scheduler) [event-driven mode]
 **Agent Layer:**
 - Works with rich objects (State, Action, Observation)
 - Has methods: `.vector()`, `.set_values()`, `.update()`
-- State.features is Dict[str, FeatureProvider] for O(1) access
+- State.features is Dict[str, Feature] for O(1) access
 
 **Proxy Layer:**
 - Stores State objects directly
@@ -1887,7 +1887,7 @@ Agent.compute_action(obs, scheduler) [event-driven mode]
 ### **4. Type Consistency Summary**
 
 - **State**: Object (agent) -> **Object (proxy)** -> **Filtered vectors (via observed_by())**
-- **State.features**: Dict[str, FeatureProvider] (keyed by feature_name, O(1) lookup)
+- **State.features**: Dict[str, Feature] (keyed by feature_name, O(1) lookup)
 - **Action**: Object (throughout, passed via broker in event-driven mode)
 - **Observation**: Object -> Dict (messages) -> Object (reconstruction)
 - **Feature**: Object (in State Dict) -> Stays in State object -> Vector (in observations)
@@ -1978,7 +1978,7 @@ env.step({"battery_1": Action(c=[0.3])}):
 
 ## **Critical Takeaways**
 
-### **1. State.features is Dict[str, FeatureProvider]**
+### **1. State.features is Dict[str, Feature]**
 - Keyed by feature_name for O(1) lookup
 - Converted from List at init_state: `{f.feature_name: f for f in features}`
 - Access pattern: `state.features["BatteryChargeFeature"].soc`
@@ -1986,7 +1986,7 @@ env.step({"battery_1": Action(c=[0.3])}):
 ### **2. Proxy Storage is State Objects**
 - State objects stored directly in `state_cache["agents"]`
 - Enables feature-level visibility filtering via `state.observed_by()`
-- Maintains full type information (FeatureProvider instances)
+- Maintains full type information (Feature instances)
 - Serialization needed only for message passing
 
 ### **3. Observation Response Bundles Obs + Local State**

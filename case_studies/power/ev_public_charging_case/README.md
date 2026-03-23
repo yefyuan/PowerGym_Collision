@@ -82,7 +82,7 @@ SystemAgent (L3)
 
 #### Features
 
-All features are implementations of `FeatureProvider` and return normalized vectors:
+All features are implementations of `Feature` and return normalized vectors:
 
 - **`ChargerFeature`**: Power (p_kw), max power, operational status
 - **`EVSlotFeature`**: Occupancy, SOC (state of charge), arrival time, price sensitivity
@@ -206,7 +206,7 @@ python -m case_studies.power.ev_public_charging_case.train_rllib --event-driven
 **What happens:**
 1. Trains policies in synchronous CTDE mode
 2. Attaches trained policies to coordinators
-3. Configures `TickConfig` with jitter for realistic async timing:
+3. Configures `ScheduleConfig` with jitter for realistic async timing:
    - System level: 300s tick interval
    - Coordinator level: 300s tick + obs/act delays
    - Field level: Faster clock with smaller delays
@@ -540,7 +540,7 @@ Return to Step 1 for next episode (reset environment)
 INITIALIZATION:
 ───────────────
 1. env.run_event_driven(num_steps=1000)
-2. Scheduler registers all agents with TickConfig
+2. Scheduler registers all agents with ScheduleConfig
 3. Initialize event queue with first tick events
 
 
@@ -802,12 +802,12 @@ Access detailed logs via:
 logging.basicConfig(level=logging.DEBUG)
 ```
 
-For event-driven analysis, use HERON's `EventAnalyzer`:
+For event-driven analysis, use HERON's `EpisodeAnalyzer`:
 
 ```python
-from heron.scheduling.analysis import EventAnalyzer
+from heron.scheduling.analysis import EpisodeAnalyzer
 
-analyzer = EventAnalyzer(env.scheduler)
+analyzer = EpisodeAnalyzer(env.scheduler)
 analyzer.print_summary()
 analyzer.plot_timeline()  # Requires matplotlib
 ```
@@ -838,7 +838,7 @@ This is normal! PricingPolicy starts with random exploration. Rewards should inc
 
 Verify:
 1. Policies are attached: `coordinator.policy is not None`
-2. TickConfig is configured: `agent.tick_config is not None`
+2. ScheduleConfig is configured: `agent.schedule_config is not None`
 3. Scheduler has events: `len(env.scheduler.event_queue) > 0`
 
 ## References
@@ -852,7 +852,7 @@ Verify:
 To extend this case study:
 
 1. **New agent types:** Subclass `FieldAgent` or `CoordinatorAgent`
-2. **New features:** Implement `FeatureProvider` interface
+2. **New features:** Implement `Feature` interface
 3. **New policies:** Subclass `Policy` with custom forward/update
 4. **New scenarios:** Create scenario class with market/regulation dynamics
 

@@ -32,7 +32,7 @@ Event-driven mode tests how your trained policy handles these realistic constrai
 ## Quick Start
 
 ```python
-from heron.scheduling import TickConfig, JitterType
+from heron.scheduling import ScheduleConfig, JitterType
 
 # 1. Train in synchronous mode (Option A)
 env = MyEnv()
@@ -42,7 +42,7 @@ env = MyEnv()
 env.setup_event_driven()
 
 # 3. Configure timing
-config = TickConfig.with_jitter(
+config = ScheduleConfig.with_jitter(
     tick_interval=1.0,    # 1 second tick rate
     obs_delay=0.1,        # 100ms observation delay
     act_delay=0.2,        # 200ms action delay
@@ -117,7 +117,7 @@ Models network latency in distributed systems.
 
 ```python
 from heron.agents import FieldAgent
-from heron.scheduling import TickConfig, JitterType
+from heron.scheduling import ScheduleConfig, JitterType
 
 # Fast sensor with low latency
 sensor = FieldAgent(
@@ -127,13 +127,13 @@ sensor = FieldAgent(
     act_delay=0.02,       # 20ms
 )
 
-# Or use TickConfig for full control
-config = TickConfig.with_jitter(
+# Or use ScheduleConfig for full control
+config = ScheduleConfig.with_jitter(
     tick_interval=0.1,
     obs_delay=0.01,
     jitter_ratio=0.05,
 )
-sensor = FieldAgent(agent_id="sensor_1", tick_config=config)
+sensor = FieldAgent(agent_id="sensor_1", schedule_config=config)
 ```
 
 ### Hierarchical Timing Patterns
@@ -142,13 +142,13 @@ Different agent levels typically have different timing requirements:
 
 ```python
 # Fast field agents (sensors/actuators)
-field_config = TickConfig(tick_interval=0.1, obs_delay=0.01)
+field_config = ScheduleConfig(tick_interval=0.1, obs_delay=0.01)
 
 # Medium-speed coordinators
-coord_config = TickConfig(tick_interval=1.0, obs_delay=0.1, msg_delay=0.05)
+coord_config = ScheduleConfig(tick_interval=1.0, obs_delay=0.1, msg_delay=0.05)
 
 # Slow system-level agents
-system_config = TickConfig(tick_interval=60.0, obs_delay=1.0)
+system_config = ScheduleConfig(tick_interval=60.0, obs_delay=1.0)
 ```
 
 ## Adding Timing Variability (Jitter)
@@ -156,10 +156,10 @@ system_config = TickConfig(tick_interval=60.0, obs_delay=1.0)
 Real systems have timing variability. Use jitter to test robustness:
 
 ```python
-from heron.scheduling import TickConfig, JitterType
+from heron.scheduling import ScheduleConfig, JitterType
 
 # Gaussian jitter (most realistic)
-config = TickConfig.with_jitter(
+config = ScheduleConfig.with_jitter(
     tick_interval=1.0,
     obs_delay=0.1,
     jitter_type=JitterType.GAUSSIAN,
@@ -168,7 +168,7 @@ config = TickConfig.with_jitter(
 )
 
 # Uniform jitter
-config = TickConfig.with_jitter(
+config = ScheduleConfig.with_jitter(
     tick_interval=1.0,
     jitter_type=JitterType.UNIFORM,
     jitter_ratio=0.1,     # +/- 10% of base value
@@ -252,7 +252,7 @@ while scheduler.current_time < 3600.0:
 
 ```python
 import numpy as np
-from heron.scheduling import TickConfig, JitterType
+from heron.scheduling import ScheduleConfig, JitterType
 
 # 1. Define environment with agents
 env = MyHeronEnv()
@@ -274,7 +274,7 @@ env.setup_default_handlers(
 
 # Configure realistic timing
 for agent_id, agent in env.registered_agents.items():
-    config = TickConfig.with_jitter(
+    config = ScheduleConfig.with_jitter(
         tick_interval=agent.tick_interval,
         obs_delay=0.1,
         act_delay=0.2,
@@ -282,7 +282,7 @@ for agent_id, agent in env.registered_agents.items():
         jitter_ratio=0.1,
         seed=42,
     )
-    env.scheduler.register_agent(agent_id, tick_config=config)
+    env.scheduler.register_agent(agent_id, schedule_config=config)
 
 # Run evaluation
 env.run_event_driven(t_end=3600.0)

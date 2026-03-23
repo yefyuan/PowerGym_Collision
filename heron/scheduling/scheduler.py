@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 from heron.scheduling.event import Event, EventType
 from heron.utils.typing import AgentID
-from heron.scheduling.tick_config import TickConfig
+from heron.scheduling.schedule_config import ScheduleConfig
 from heron.agents.constants import SYSTEM_AGENT_ID
 
 
@@ -16,10 +16,12 @@ class EventScheduler:
         self.event_queue: List[Event] = []
         self._sequence_counter: int = 0
 
-        # Agent configuration - TickConfig storage
-        self._agent_tick_configs: Dict[AgentID, "TickConfig"] = {}
+        # Agent configuration - ScheduleConfig storage
+        self._agent_schedule_configs: Dict[AgentID, "ScheduleConfig"] = {}
 
-        self.handlers: Dict[AgentID, Dict[EventType, Callable[[Event, "EventScheduler"], None]]] = {}
+        self.handlers: Dict[
+            AgentID, Dict[EventType, Callable[[Event, "EventScheduler"], None]]
+        ] = {}
 
         # Tracking
         self._processed_count: int = 0
@@ -31,37 +33,39 @@ class EventScheduler:
     @staticmethod
     def init(config: Optional[Dict[str, Any]] = None) -> "EventScheduler":
         if not config:
-            return DefaultScheduler()
+            return EventScheduler(start_time=0.0)
 
         start_time = config.get("start_time", 0.0)
         return EventScheduler(start_time)
 
     @property
-    def agent_tick_configs(self) -> Dict[AgentID, "TickConfig"]:
+    def agent_schedule_configs(self) -> Dict[AgentID, "ScheduleConfig"]:
         """Get the tick configs for all agents."""
-        return self._agent_tick_configs
-    
+        return self._agent_schedule_configs
+
     def attach(self, agents: Dict[AgentID, "Agent"]) -> None:
         """Register agents with the scheduler and schedule the initial system tick.
 
-        Stores each agent's TickConfig, marks them as active, registers their
+        Stores each agent's ScheduleConfig, marks them as active, registers their
         event handlers, and schedules the first AGENT_TICK for the system agent.
 
         Args:
             agents: Dict mapping agent IDs to Agent instances
         """
         for agent_id, agent in agents.items():
-            self._agent_tick_configs[agent_id] = agent.tick_config
+            self._agent_schedule_configs[agent_id] = agent.schedule_config
             self._active_agents.add(agent_id)
             self.set_handlers_for_agent(agent_id, agent.get_handlers())
             if agent_id == SYSTEM_AGENT_ID:
                 # Only schedule first tick for system agent
-                self.schedule(Event(
-                timestamp=self.current_time,
-                event_type=EventType.AGENT_TICK,
-                agent_id=agent_id,
-                payload={}
-            ))
+                self.schedule(
+                    Event(
+                        timestamp=self.current_time,
+                        event_type=EventType.AGENT_TICK,
+                        agent_id=agent_id,
+                        payload={},
+                    )
+                )
 
     # ===============================
     # Event Scheduling Methods
@@ -85,7 +89,7 @@ class EventScheduler:
     ) -> None:
         """Schedule an agent tick event.
 
-        Uses jittered interval from TickConfig if available.
+        Uses jittered interval from ScheduleConfig if available.
 
         Args:
             agent_id: Agent to tick
@@ -95,12 +99,14 @@ class EventScheduler:
         if timestamp is None:
             timestamp = self.current_time + self.get_tick_interval(agent_id)
 
-        self.schedule(Event(
-            timestamp=timestamp,
-            event_type=EventType.AGENT_TICK,
-            agent_id=agent_id,
-            payload=payload or {}
-        ))
+        self.schedule(
+            Event(
+                timestamp=timestamp,
+                event_type=EventType.AGENT_TICK,
+                agent_id=agent_id,
+                payload=payload or {},
+            )
+        )
 
     def schedule_action_effect(
         self,
@@ -109,7 +115,7 @@ class EventScheduler:
     ) -> None:
         """Schedule a delayed action effect.
 
-        Uses jittered delay from TickConfig if available.
+        Uses jittered delay from ScheduleConfig if available.
 
         Args:
             agent_id: Agent whose action this is
@@ -118,12 +124,14 @@ class EventScheduler:
         if delay is None:
             delay = self.get_act_delay(agent_id)
 
-        self.schedule(Event(
-            timestamp=self.current_time + delay,
-            event_type=EventType.ACTION_EFFECT,
-            agent_id=agent_id,
-            priority=0,  # Agent-level events (applies action effects on agent state)
-        ))
+        self.schedule(
+            Event(
+                timestamp=self.current_time + delay,
+                event_type=EventType.ACTION_EFFECT,
+                agent_id=agent_id,
+                priority=0,  # Agent-level events (applies action effects on agent state)
+            )
+        )
 
     def schedule_message_delivery(
         self,
@@ -134,7 +142,7 @@ class EventScheduler:
     ) -> None:
         """Schedule a delayed message delivery.
 
-        Uses jittered delay from sender's TickConfig if delay not provided.
+        Uses jittered delay from sender's ScheduleConfig if delay not provided.
 
         Args:
             sender_id: Sending agent
@@ -145,20 +153,22 @@ class EventScheduler:
         if delay is None:
             delay = self.get_msg_delay(sender_id)
 
-        self.schedule(Event(
-            timestamp=self.current_time + delay,
-            event_type=EventType.MESSAGE_DELIVERY,
-            agent_id=recipient_id,
-            priority=2,  # Communication-level events (deliver after state changes)
-            payload={"sender": sender_id, "message": message}
-        ))
+        self.schedule(
+            Event(
+                timestamp=self.current_time + delay,
+                event_type=EventType.MESSAGE_DELIVERY,
+                agent_id=recipient_id,
+                priority=2,  # Communication-level events (deliver after state changes)
+                payload={"sender": sender_id, "message": message},
+            )
+        )
 
     def schedule_simulation(
         self,
         agent_id: AgentID,
         delay: Optional[float] = None,
-    ): 
-        assert agent_id == SYSTEM_AGENT_ID
+    ):
+        # TODO: enable lower-hierarchy agents to schedule simulation-level events (e.g. for environment dynamics) without exposing full scheduler API - may require additional checks or new event types to prevent abuse
         self.schedule(
             Event(
                 timestamp=self.current_time + delay,
@@ -168,7 +178,6 @@ class EventScheduler:
             )
         )
 
-    
     # ===============================
     # Delay and Interval Accessors with Jitter Support
     # ===============================
@@ -181,7 +190,7 @@ class EventScheduler:
         Returns:
             Observation delay (jittered if config has jitter enabled)
         """
-        config = self._agent_tick_configs.get(agent_id)
+        config = self._agent_schedule_configs.get(agent_id)
         if config:
             return config.get_obs_delay()
         return 0.0
@@ -195,11 +204,11 @@ class EventScheduler:
         Returns:
             Action delay (jittered if config has jitter enabled)
         """
-        config = self._agent_tick_configs.get(agent_id)
+        config = self._agent_schedule_configs.get(agent_id)
         if config:
             return config.get_act_delay()
         return 0.0
-    
+
     def get_msg_delay(self, agent_id: AgentID) -> float:
         """Get (possibly jittered) message delay for agent.
 
@@ -209,11 +218,11 @@ class EventScheduler:
         Returns:
             Message delay (jittered if config has jitter enabled)
         """
-        config = self._agent_tick_configs.get(agent_id)
+        config = self._agent_schedule_configs.get(agent_id)
         if config:
             return config.get_msg_delay()
         return 0.0
-    
+
     def get_tick_interval(self, agent_id: AgentID) -> float:
         """Get (possibly jittered) tick interval for agent.
 
@@ -223,11 +232,10 @@ class EventScheduler:
         Returns:
             Tick interval (jittered if config has jitter enabled)
         """
-        config = self._agent_tick_configs.get(agent_id)
+        config = self._agent_schedule_configs.get(agent_id)
         if config:
             return config.get_tick_interval()
         return 1.0
-
 
     # ===============================
     # Handler Management
@@ -281,7 +289,6 @@ class EventScheduler:
         if agent_id in self.handlers:
             return self.handlers[agent_id].get(event_type)
         return None
-    
 
     # ===============================
     # Core Event Loop Methods
@@ -289,7 +296,7 @@ class EventScheduler:
     # - pop: Remove and return next event
     # - process_next: Process next event (advance time, call handler)
     # - run_until: Run until time limit or event limit
-    # 
+    #
     # To be implemented (upon roadmap):
     # - run: Run indefinitely until no events left (with optional max_events limit)
     # - run_steps: Run a fixed number of events (Not used yet, but useful for step-based execution mode)
@@ -328,12 +335,16 @@ class EventScheduler:
 
         # check for valid agent id
         if event.agent_id and event.agent_id not in self._active_agents:
-            raise ValueError(f"{event.agent_id} is not registered, check your environment setup again")
+            raise ValueError(
+                f"{event.agent_id} is not registered, check your environment setup again"
+            )
 
         # Dispatch to handler (agent-specific first, then global fallback)
         handler = self.get_handler(event.event_type, event.agent_id)
         if handler is None:
-            raise ValueError(f"No handler registered for event_type={event.event_type}, agent_id={event.agent_id}")
+            raise ValueError(
+                f"No handler registered for event_type={event.event_type}, agent_id={event.agent_id}"
+            )
         handler(event, self)
 
         return event
@@ -371,7 +382,7 @@ class EventScheduler:
         self.event_queue.clear()
         self._sequence_counter = 0
 
-    def sync_tick_configs(self, agents: Dict[AgentID, "Agent"]) -> None:
+    def sync_schedule_configs(self, agents: Dict[AgentID, "Agent"]) -> None:
         """Re-sync cached tick configs from agents.
 
         Call this after modifying agents' tick configs (e.g. changing
@@ -383,7 +394,7 @@ class EventScheduler:
         """
         for agent_id, agent in agents.items():
             if agent_id in self._active_agents:
-                self._agent_tick_configs[agent_id] = agent.tick_config
+                self._agent_schedule_configs[agent_id] = agent.schedule_config
 
     def reset(self, start_time: float = 0.0) -> None:
         """Reset scheduler to initial state.
@@ -398,13 +409,17 @@ class EventScheduler:
         # Re-schedule first tick only for system agent (matches attach() behavior)
         # System agent will cascade ticks to subordinates
         if SYSTEM_AGENT_ID not in self._active_agents:
-            raise ValueError(f"System agent (ID={SYSTEM_AGENT_ID}) not registered, check your environment setup again")
-        self.schedule(Event(
-            timestamp=start_time,
-            event_type=EventType.AGENT_TICK,
-            agent_id=SYSTEM_AGENT_ID,
-            payload={}
-        ))
+            raise ValueError(
+                f"System agent (ID={SYSTEM_AGENT_ID}) not registered, check your environment setup again"
+            )
+        self.schedule(
+            Event(
+                timestamp=start_time,
+                event_type=EventType.AGENT_TICK,
+                agent_id=SYSTEM_AGENT_ID,
+                payload={},
+            )
+        )
 
     # ===============================
     # Properties and Utility Methods
@@ -422,34 +437,5 @@ class EventScheduler:
     def __repr__(self) -> str:
         return (
             f"EventScheduler(t={self.current_time:.3f}, "
-            f"pending={self.pending_count}, agents={len(self._active_agents)})"
-        )
-
-
-class DefaultScheduler(EventScheduler):
-    """Default scheduler with sensible defaults for synchronous training mode.
-
-    This scheduler provides a minimal configuration suitable for synchronous
-    step-based execution (Option A - Training) where event-driven scheduling
-    is not required. It uses zero-delay settings and a tick interval of 1.0.
-
-    For event-driven execution with timing delays (Option B - Testing),
-    use EventScheduler directly with explicit timing configuration.
-
-    Example:
-        # Simple usage for training
-        scheduler = DefaultScheduler()
-
-        # Equivalent to:
-        scheduler = EventScheduler(start_time=0.0)
-    """
-
-    def __init__(self) -> None:
-        """Initialize with default settings (start_time=0.0)."""
-        super().__init__(start_time=0.0)
-
-    def __repr__(self) -> str:
-        return (
-            f"DefaultScheduler(t={self.current_time:.3f}, "
             f"pending={self.pending_count}, agents={len(self._active_agents)})"
         )

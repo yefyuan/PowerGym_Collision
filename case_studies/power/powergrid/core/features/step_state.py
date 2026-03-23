@@ -5,12 +5,12 @@ from typing import List, Optional
 
 import numpy as np
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from powergrid.utils.phase import PhaseModel, PhaseSpec
 
 
 @dataclass(slots=True)
-class StepState(FeatureProvider):
+class StepState(Feature):
     """Provider for discrete step state (e.g., shunt capacitor banks)."""
     max_step: int = 0
     step: Optional[np.ndarray] = None  # One-hot encoded current step

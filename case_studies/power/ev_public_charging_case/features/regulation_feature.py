@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 import numpy as np
 from typing import ClassVar, Sequence
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 
 
 @dataclass(slots=True)
-class RegulationFeature(FeatureProvider):
+class RegulationFeature(Feature):
 
     visibility: ClassVar[Sequence[str]] = ['owner', 'system']
 

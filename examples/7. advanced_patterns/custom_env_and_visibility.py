@@ -28,7 +28,7 @@ import numpy as np
 from heron.agents.field_agent import FieldAgent
 from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.core.action import Action
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.state import FieldAgentState
 from heron.envs.base import HeronEnv
 from heron.agents.constants import FIELD_LEVEL, COORDINATOR_LEVEL, SYSTEM_LEVEL
@@ -39,35 +39,35 @@ from heron.agents.constants import FIELD_LEVEL, COORDINATOR_LEVEL, SYSTEM_LEVEL
 # ---------------------------------------------------------------------------
 
 @dataclass(slots=True)
-class PublicFeature(FeatureProvider):
+class PublicFeature(Feature):
     """Visible to ALL agents (peers, coordinators, system)."""
     visibility: ClassVar[Sequence[str]] = ["public"]
     power_output: float = 0.0
 
 
 @dataclass(slots=True)
-class OwnerOnlyFeature(FeatureProvider):
+class OwnerOnlyFeature(Feature):
     """Visible ONLY to the owning agent."""
     visibility: ClassVar[Sequence[str]] = ["owner"]
     degradation: float = 0.0
 
 
 @dataclass(slots=True)
-class SystemFeature(FeatureProvider):
+class SystemFeature(Feature):
     """Visible to system-level agents (level >= 3) only."""
     visibility: ClassVar[Sequence[str]] = ["system"]
     maintenance_flag: float = 0.0
 
 
 @dataclass(slots=True)
-class UpperLevelFeature(FeatureProvider):
+class UpperLevelFeature(Feature):
     """Visible to the agent one level above the owner."""
     visibility: ClassVar[Sequence[str]] = ["upper_level"]
     efficiency: float = 0.95
 
 
 @dataclass(slots=True)
-class MixedVisibilityFeature(FeatureProvider):
+class MixedVisibilityFeature(Feature):
     """Visible to owner AND upper level (but not peers)."""
     visibility: ClassVar[Sequence[str]] = ["owner", "upper_level"]
     internal_temp: float = 25.0
@@ -79,7 +79,7 @@ def demo_visibility_modes():
     print("Part 1: Feature Visibility Modes")
     print("=" * 60)
     print("""
-  Each FeatureProvider has a visibility class variable:
+  Each Feature has a visibility class variable:
     "public"      -- visible to everyone
     "owner"       -- visible only to the owning agent
     "system"      -- visible to system-level agents (level >= 3)
@@ -176,7 +176,7 @@ def demo_observed_by():
 # ---------------------------------------------------------------------------
 
 @dataclass(slots=True)
-class SolarFeature(FeatureProvider):
+class SolarFeature(Feature):
     """Solar farm: public output and curtailment setting."""
     visibility: ClassVar[Sequence[str]] = ["public"]
     power: float = 0.0       # actual output after irradiance (set by simulation)
@@ -184,14 +184,14 @@ class SolarFeature(FeatureProvider):
 
 
 @dataclass(slots=True)
-class SolarPrivateFeature(FeatureProvider):
+class SolarPrivateFeature(Feature):
     """Private metrics only the solar agent itself sees."""
     visibility: ClassVar[Sequence[str]] = ["owner"]
     panel_degradation: float = 0.0
 
 
 @dataclass(slots=True)
-class BatteryFeature(FeatureProvider):
+class BatteryFeature(Feature):
     """Battery: public power flow, owner-only state of charge."""
     visibility: ClassVar[Sequence[str]] = ["public"]
     power: float = 0.0
@@ -201,7 +201,7 @@ class BatteryFeature(FeatureProvider):
 class SolarAgent(FieldAgent):
     """Solar farm with mixed-visibility features."""
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         action = Action()
         action.set_specs(
             dim_c=1,
@@ -229,7 +229,7 @@ class SolarAgent(FieldAgent):
 class BatteryAgent(FieldAgent):
     """Battery with charge/discharge control."""
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         action = Action()
         action.set_specs(
             dim_c=1,

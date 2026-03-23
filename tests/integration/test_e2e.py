@@ -12,16 +12,16 @@ from heron.agents.coordinator_agent import CoordinatorAgent
 from heron.agents.system_agent import SystemAgent
 from heron.agents.constants import FIELD_LEVEL, COORDINATOR_LEVEL, SYSTEM_LEVEL
 from heron.core.observation import Observation
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.action import Action
 from heron.core.policies import Policy, obs_to_vector, vector_to_action
 from heron.envs.base import HeronEnv
-from heron.scheduling import EventScheduler, EventType, TickConfig, JitterType
-from heron.scheduling.analysis import EventAnalyzer
+from heron.scheduling import EventScheduler, EventType, ScheduleConfig, JitterType
+from heron.scheduling.analysis import EpisodeAnalyzer
 
 
 @dataclass(slots=True)
-class BatteryChargeFeature(FeatureProvider):
+class BatteryChargeFeature(Feature):
     """Battery state of charge feature - auto-registered via FeatureMeta."""
     visibility: ClassVar[Sequence[str]] = ["public"]
 
@@ -47,7 +47,7 @@ class BatteryAgent(FieldAgent):
     def capacity(self) -> float:
         return self.state.features["BatteryChargeFeature"].capacity
 
-    def init_action(self, features: List[FeatureProvider] = []):
+    def init_action(self, features: List[Feature] = []):
         """Initialize action (charge/discharge rate)."""
         action = Action()
         action.set_specs(dim_c=1, range=(np.array([-1.0]), np.array([1.0])))
@@ -445,7 +445,7 @@ print(f"\nAttaching trained policies to field agents for deployment...")
 env.set_agent_policies(policies)
 
 # Update jitter configs for agents, make sure the intervals/delays are small enough (since we only run until t_end=300.0)
-field_tick_config = TickConfig.with_jitter(
+field_schedule_config = ScheduleConfig.with_jitter(
     tick_interval=5.0,    # Field agents tick every 5 seconds
     obs_delay=0.1,        # 100ms observation delay
     act_delay=0.2,        # 200ms action delay
@@ -454,7 +454,7 @@ field_tick_config = TickConfig.with_jitter(
     jitter_ratio=0.1,     # 10% jitter
     seed=42
 )
-coordinator_tick_config = TickConfig.with_jitter(
+coordinator_schedule_config = ScheduleConfig.with_jitter(
     tick_interval=10.0,   # Coordinators tick every 10 seconds
     obs_delay=0.2,
     act_delay=0.3,
@@ -464,7 +464,7 @@ coordinator_tick_config = TickConfig.with_jitter(
     jitter_ratio=0.1,
     seed=43
 )
-system_tick_config = TickConfig.with_jitter(
+system_schedule_config = ScheduleConfig.with_jitter(
     tick_interval=15.0,   # System agent ticks every 15 seconds
     obs_delay=0.3,
     act_delay=0.5,
@@ -476,18 +476,18 @@ system_tick_config = TickConfig.with_jitter(
 )
 
 # Apply configs to agents
-battery_agent_1.tick_config = field_tick_config
-battery_agent_2.tick_config = field_tick_config
-zone_coordinator.tick_config = coordinator_tick_config
-grid_system_agent.tick_config = system_tick_config
+battery_agent_1.schedule_config = field_schedule_config
+battery_agent_2.schedule_config = field_schedule_config
+zone_coordinator.schedule_config = coordinator_schedule_config
+grid_system_agent.schedule_config = system_schedule_config
 
 # Update scheduler's tick config cache (it caches during attach())
 for agent_id, agent in env.registered_agents.items():
-    if hasattr(agent, 'tick_config'):
-        env.scheduler._agent_tick_configs[agent_id] = agent.tick_config
+    if hasattr(agent, 'schedule_config'):
+        env.scheduler._agent_schedule_configs[agent_id] = agent.schedule_config
 
 # Reset environment to apply new tick configs
 env.reset(seed=200)
 
-event_analyzer = EventAnalyzer(verbose=True, track_data=True)
-episode = env.run_event_driven(event_analyzer=event_analyzer, t_end=300.0)
+episode_analyzer = EpisodeAnalyzer(verbose=True, track_data=True)
+episode = env.run_event_driven(episode_analyzer=episode_analyzer, t_end=300.0)

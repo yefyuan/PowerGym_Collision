@@ -1,7 +1,7 @@
 """Features & Visibility -- HERON's declarative observability model.
 
 HERON's core differentiator is that information structure is *declared*, not
-coded.  Each FeatureProvider subclass carries a `visibility` class variable
+coded.  Each Feature subclass carries a `visibility` class variable
 that controls which agents in the hierarchy can observe it.
 
 Visibility levels
@@ -28,7 +28,7 @@ from typing import Any, ClassVar, Sequence
 
 import numpy as np
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 
 
 # ---------------------------------------------------------------------------
@@ -36,28 +36,28 @@ from heron.core.feature import FeatureProvider
 # ---------------------------------------------------------------------------
 
 @dataclass(slots=True)
-class PublicMetric(FeatureProvider):
+class PublicMetric(Feature):
     """Visible to everyone -- e.g. a published price signal."""
     visibility: ClassVar[Sequence[str]] = ["public"]
     value: float = 1.0
 
 
 @dataclass(slots=True)
-class PrivateSensor(FeatureProvider):
+class PrivateSensor(Feature):
     """Visible only to the owning agent -- e.g. internal diagnostics."""
     visibility: ClassVar[Sequence[str]] = ["owner"]
     reading: float = 42.0
 
 
 @dataclass(slots=True)
-class SupervisorReport(FeatureProvider):
+class SupervisorReport(Feature):
     """Visible to the owner AND its direct supervisor (one level up)."""
     visibility: ClassVar[Sequence[str]] = ["owner", "upper_level"]
     status: float = 0.8
 
 
 @dataclass(slots=True)
-class SystemTelemetry(FeatureProvider):
+class SystemTelemetry(Feature):
     """Visible to the owner AND system-level agents (level >= 3)."""
     visibility: ClassVar[Sequence[str]] = ["owner", "system"]
     health: float = 0.95

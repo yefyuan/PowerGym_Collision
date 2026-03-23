@@ -28,7 +28,7 @@ Top-level agent for global coordination. System agents:
 - Interface with external systems
 - Example: A grid operator, a building manager
 
-### ProxyAgent
+### Proxy
 Special agent for state distribution in distributed mode. The proxy:
 - Caches environment state
 - Filters state based on visibility permissions
@@ -47,9 +47,9 @@ A composable unit of agent state. Features define:
 - What data the agent tracks
 - Visibility permissions (who can observe it)
 - Serialization for RL algorithms
-- See: `FeatureProvider` base class
+- See: `Feature` base class
 
-### FeatureProvider
+### Feature
 Abstract base class for defining features. Subclasses must implement:
 - `vector()`: Convert to numpy array
 - `names()`: Human-readable dimension names
@@ -175,7 +175,7 @@ Named topic for message routing. Types:
 
 ## Environment
 
-### HeronEnvCore
+### HeronBaseEnv
 Mixin providing HERON functionality to any environment. Handles:
 - Agent registration and management
 - Event-driven scheduling
@@ -200,7 +200,7 @@ A scheduled occurrence in the simulation. Types:
 - `ACTION_EFFECT`: Delayed action takes effect
 - `MESSAGE_DELIVERY`: Message arrives at recipient
 
-### TickConfig
+### ScheduleConfig
 Configuration object for agent timing. Supports deterministic or jittered timing.
 
 ## See Also

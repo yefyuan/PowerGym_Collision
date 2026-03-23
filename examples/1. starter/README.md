@@ -32,7 +32,7 @@ hmarl-cbf/
 
 | File | Responsibility |
 |------|---------------|
-| `features.py` | Defines `FeatureProvider` subclasses (`DronePositionFeature`, `FleetSafetyFeature`) that represent the observable state of each agent. Features are the bridge between raw simulation state and what agents "see". |
+| `features.py` | Defines `Feature` subclasses (`DronePositionFeature`, `FleetSafetyFeature`) that represent the observable state of each agent. Features are the bridge between raw simulation state and what agents "see". |
 | `agents.py` | Defines `TransportDrone` (field agent) and `TransportCoordinator` (coordinator agent). Each agent declares its action space, how actions modify state, and how local rewards are computed. |
 | `env_physics.py` | Contains simulation functions that advance the world between agent steps: wind drag, state aggregation, and (in Case 2) the CBF safety filter. |
 | `case*.py` | Entry points that wire agents, features, and physics together into an RLlib training config, then train and evaluate. |
@@ -129,7 +129,7 @@ Both cases use `TransportDrone`, `TransportCoordinator`, `DronePositionFeature`,
 
 To create your own case:
 
-1. **Define features** in `features.py` -- subclass `FeatureProvider` with your observable state fields.
+1. **Define features** in `features.py` -- subclass `Feature` with your observable state fields.
 2. **Define agents** in `agents.py` -- subclass `FieldAgent` / `CoordinatorAgent` with action specs, state transitions, and reward functions.
 3. **Define physics** in `env_physics.py` -- write a `simulation(agent_states) -> agent_states` function.
 4. **Wire it up** in a new `case*.py` -- configure RLlib with your agents, features, and simulation.

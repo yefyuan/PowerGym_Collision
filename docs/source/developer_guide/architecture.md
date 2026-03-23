@@ -11,14 +11,14 @@ heron/                          # Domain-agnostic MARL framework
 │   ├── field_agent.py          # Leaf-level agents (local sensing/actuation)
 │   ├── coordinator_agent.py    # Mid-level agents (manages subordinate agents)
 │   ├── system_agent.py         # Top-level agent (global coordination)
-│   ├── proxy_agent.py          # Singleton state mediation hub
+│   ├── proxy.py          # Singleton state mediation hub
 │   └── constants.py            # SYSTEM_AGENT_ID, PROXY_AGENT_ID constants
 │
 ├── core/                       # Core abstractions
 │   ├── action.py               # Action with continuous/discrete support
 │   ├── observation.py          # Observation with local/global/messages
-│   ├── state.py                # State with FeatureProvider composition
-│   ├── feature.py              # FeatureProvider with visibility tags + registry
+│   ├── state.py                # State with Feature composition
+│   ├── feature.py              # Feature with visibility tags + registry
 │   └── policies.py             # Policy abstractions (random, rule-based)
 │
 ├── protocols/                  # Coordination protocols
@@ -35,11 +35,11 @@ heron/                          # Domain-agnostic MARL framework
 ├── scheduling/                 # Event-driven scheduling
 │   ├── scheduler.py            # EventScheduler (heap-based priority queue)
 │   ├── event.py                # Event dataclass, EventType enum
-│   ├── tick_config.py          # TickConfig (intervals, delays, jitter)
-│   └── analysis.py             # EventAnalyzer, EpisodeResult
+│   ├── schedule_config.py          # ScheduleConfig (intervals, delays, jitter)
+│   └── analysis.py             # EpisodeAnalyzer, EpisodeStats
 │
 ├── envs/                       # Base environment interfaces
-│   └── base.py                 # EnvCore, HeronEnv (extends EnvCore)
+│   └── base.py                 # BaseEnv, HeronEnv (extends BaseEnv)
 │
 ├── adaptors/                   # RL framework adaptors
 │   ├── epymarl.py              # EPyMARL integration
@@ -69,10 +69,10 @@ Each level has distinct responsibilities:
 
 ### 2. Feature-Based State
 
-Composable `FeatureProvider` using metaclass auto-registration:
+Composable `Feature` using metaclass auto-registration:
 
 ```python
-class FeatureProvider(metaclass=FeatureMeta):
+class Feature(metaclass=FeatureMeta):
     """Base class for feature providers.
 
     Subclasses should:
@@ -150,7 +150,7 @@ class MessageBroker(ABC):
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                      ProxyAgent                               │
+│                      Proxy                               │
 │  ┌────────────────────────────────────────────────────────┐  │
 │  │  State Cache (per-agent features + visibility filter)  │  │
 │  └────────────────────────────────────────────────────────┘  │
@@ -180,7 +180,7 @@ class MessageBroker(ABC):
 │  └────────────────────────────────────────────────────────┘  │
 │         │                                                    │
 │    ┌────┴────────────────────────────────────────────┐       │
-│    │         ProxyAgent (singleton)                   │       │
+│    │         Proxy (singleton)                   │       │
 │    │    State cache + visibility-filtered responses   │       │
 │    └────┬──────────┬──────────┬──────────┬──────────┘       │
 │         │          │          │          │                    │
@@ -197,7 +197,7 @@ class MessageBroker(ABC):
 | Component | How to Extend |
 |-----------|---------------|
 | Agents | Subclass `FieldAgent`, `CoordinatorAgent`, or `SystemAgent` |
-| Features | Subclass `FeatureProvider` (auto-registered via `FeatureMeta`) |
+| Features | Subclass `Feature` (auto-registered via `FeatureMeta`) |
 | Protocols | Implement `CommunicationProtocol` and/or `ActionProtocol` |
 | Brokers | Implement `MessageBroker` interface |
-| Environments | Subclass `HeronEnv` (extends `EnvCore`) |
+| Environments | Subclass `HeronEnv` (extends `BaseEnv`) |

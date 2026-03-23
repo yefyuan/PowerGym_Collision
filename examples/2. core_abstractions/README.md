@@ -22,7 +22,7 @@ python observations_and_state.py     # ~5 sec
 
 ```
 2. core_abstractions/
-├── features_and_visibility.py   # FeatureProvider, visibility rules, is_observable_by()
+├── features_and_visibility.py   # Feature, visibility rules, is_observable_by()
 ├── actions_and_spaces.py        # Action specs, scale/unscale, Gymnasium interop
 ├── observations_and_state.py    # State composition, observation filtering, serialization
 └── README.md
@@ -34,7 +34,7 @@ python observations_and_state.py     # ~5 sec
 
 | Concept | What's shown |
 |---------|-------------|
-| `FeatureProvider` subclass | Define observable state fields with `@dataclass(slots=True)` |
+| `Feature` subclass | Define observable state fields with `@dataclass(slots=True)` |
 | `visibility` class variable | `"public"`, `"owner"`, `"upper_level"`, `"system"` |
 | `is_observable_by()` | Who can see a feature given the requester's position in the hierarchy |
 | `set_values()` / `reset()` | Update and reset feature fields |
@@ -61,7 +61,7 @@ python observations_and_state.py     # ~5 sec
 
 | Concept | What's shown |
 |---------|-------------|
-| `State` from features | Compose `FieldAgentState` from multiple `FeatureProvider`s |
+| `State` from features | Compose `FieldAgentState` from multiple `Feature`s |
 | `observed_by()` | Automatic visibility filtering -- returns only features the requestor can see |
 | `Observation` structure | `local` (own state) + `global_info` (others' visible state) |
 | `vector()` variants | `local_vector()`, `global_vector()`, full `vector()` |
@@ -73,7 +73,7 @@ python observations_and_state.py     # ~5 sec
 ## Concepts Map
 
 ```
-FeatureProvider          Action                 Observation
+Feature          Action                 Observation
   ├── visibility         ├── dim_c (continuous)   ├── local (own features)
   ├── vector()           ├── dim_d (discrete)     ├── global_info (others)
   ├── set_values()       ├── scale/unscale        ├── vector() (flat)

@@ -6,16 +6,16 @@ import numpy as np
 from gymnasium.spaces import Box, Space
 
 from heron.agents.base import Agent
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.core.observation import Observation
 from heron.core.state import FieldAgentState, State
 from heron.core.action import Action
 from heron.core.policies import Policy
 from heron.utils.typing import AgentID
 from heron.protocols.base import Protocol
-from heron.scheduling.tick_config import DEFAULT_FIELD_AGENT_TICK_CONFIG, TickConfig
+from heron.scheduling.schedule_config import DEFAULT_FIELD_AGENT_SCHEDULE_CONFIG, ScheduleConfig
 from heron.scheduling.scheduler import EventScheduler, Event
-from heron.agents.proxy_agent import ProxyAgent
+from heron.agents.proxy_agent import Proxy
 from heron.agents.constants import (
     FIELD_LEVEL,
     PROXY_AGENT_ID,
@@ -35,12 +35,12 @@ class FieldAgent(Agent):
     def __init__(
         self,
         agent_id: AgentID,
-        features: Optional[List[FeatureProvider]] = None,
+        features: Optional[List[Feature]] = None,
         # hierarchy params
         upstream_id: Optional[AgentID] = None,
         env_id: Optional[str] = None,
         # timing config (for event-driven scheduling)
-        tick_config: Optional[TickConfig] = None,
+        schedule_config: Optional[ScheduleConfig] = None,
         # execution params
         policy: Optional[Policy] = None,
         # coordination params
@@ -57,7 +57,7 @@ class FieldAgent(Agent):
             upstream_id=upstream_id,
             subordinates=None, # L1 agent has no subordinate
             env_id=env_id,
-            tick_config=tick_config or DEFAULT_FIELD_AGENT_TICK_CONFIG,
+            schedule_config=schedule_config or DEFAULT_FIELD_AGENT_SCHEDULE_CONFIG,
             policy=policy,
             protocol=protocol,
         )
@@ -86,7 +86,7 @@ class FieldAgent(Agent):
     # 5. post_proxy_attach
     # ============================================
 
-    def init_state(self, features: List[FeatureProvider] = []) -> State:
+    def init_state(self, features: List[Feature] = []) -> State:
         """Initialize a FieldAgentState from the provided features."""
         return FieldAgentState(
             owner_id=self.agent_id,
@@ -94,7 +94,7 @@ class FieldAgent(Agent):
             features={f.feature_name: f for f in features}
         )
 
-    def init_action(self, features: List[FeatureProvider] = []) -> Action:
+    def init_action(self, features: List[Feature] = []) -> Action:
         """Initialize an empty Action (override to define custom action structure)."""
         return Action()
 
@@ -108,7 +108,7 @@ class FieldAgent(Agent):
             "No implementation of set_action found, you need to define how to set action for this agent"
         )
 
-    def post_proxy_attach(self, proxy: "ProxyAgent") -> None:
+    def post_proxy_attach(self, proxy: "Proxy") -> None:
         """Hook for any additional setup after proxy attachment and global state initialization."""
         self.action_space = self.get_action_space()
         self.observation_space = self.get_observation_space(proxy)
@@ -131,7 +131,7 @@ class FieldAgent(Agent):
         """
         return self.action.space
 
-    def get_observation_space(self, proxy: Optional[ProxyAgent] = None) -> Space:
+    def get_observation_space(self, proxy: Optional[Proxy] = None) -> Space:
         """Get observation space based on agent state. [Both Modes]
 
         Returns:
@@ -160,7 +160,7 @@ class FieldAgent(Agent):
     # ============================================
     # Core Lifecycle Methods Overrides (see heron/agents/base.py for more details)
     # ============================================
-    def reset(self, *, seed: Optional[int] = None, proxy: Optional[ProxyAgent] = None, **kwargs) -> Any:
+    def reset(self, *, seed: Optional[int] = None, proxy: Optional[Proxy] = None, **kwargs) -> Any:
         super().reset(seed=seed, proxy=proxy, **kwargs)
 
         self.action_space = self.get_action_space()
@@ -192,7 +192,7 @@ class FieldAgent(Agent):
             sender_id=self.agent_id,
             recipient_id=PROXY_AGENT_ID,
             message={MSG_GET_INFO: INFO_TYPE_OBS, MSG_KEY_PROTOCOL: self.protocol},
-            delay=self._tick_config.msg_delay,
+            delay=self._schedule_config.msg_delay,
         )
     
     # ============================================
@@ -209,7 +209,7 @@ class FieldAgent(Agent):
             sender_id=self.agent_id,
             recipient_id=PROXY_AGENT_ID,
             message={MSG_SET_STATE: STATE_TYPE_LOCAL, "body": self.state.to_dict(include_metadata=True)},
-            delay=self._tick_config.msg_delay,
+            delay=self._schedule_config.msg_delay,
         )
 
     @Agent.handler("message_delivery")

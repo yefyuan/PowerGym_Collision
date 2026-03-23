@@ -7,7 +7,7 @@ import numpy as np
 
 from heron.agents.base import Agent
 from heron.core.observation import Observation
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from heron.protocols.base import Protocol
 from heron.messaging import ChannelManager, Message, MessageBroker, MessageType
 from heron.utils.typing import AgentID
@@ -32,7 +32,7 @@ from heron.agents.constants import (
 
 from heron.core.state import State
 
-class ProxyAgent(Agent):
+class Proxy(Agent):
 
     def __init__(
         self,
@@ -64,13 +64,13 @@ class ProxyAgent(Agent):
 
     # ============================================
     # Initialization and State/Action Management Overrides
-    # Note that ProxyAgent does not maintain its own state or action in the traditional sense, so these methods are either no-ops or can be used to set up any necessary internal structures for
+    # Note that Proxy does not maintain its own state or action in the traditional sense, so these methods are either no-ops or can be used to set up any necessary internal structures for
     # managing the proxy's functionality (e.g. state cache, visibility rules, etc.)
     # ============================================
-    def init_state(self, features: List[FeatureProvider] = []) -> None:
+    def init_state(self, features: List[Feature] = []) -> None:
         pass
 
-    def init_action(self, features: List[FeatureProvider] = []) -> None:
+    def init_action(self, features: List[Feature] = []) -> None:
         pass
 
     def set_state(self, *args, **kwargs) -> None:
@@ -106,7 +106,7 @@ class ProxyAgent(Agent):
 
     def _setup_channels(self) -> None:
         if self._message_broker is None:
-            raise ValueError("Message broker is required to setup channels in ProxyAgent")
+            raise ValueError("Message broker is required to setup channels in Proxy")
 
         # Create proxy->agent channels for distributing state
         for agent_id in self.registered_agents:
@@ -166,7 +166,7 @@ class ProxyAgent(Agent):
 
     # ============================================
     # Core Agent Lifecycle Methods Overrides (see heron/agents/base.py for more details)
-    # Note that ProxyAgent does not follow the standard observe-decide-act loop, so execute and tick are empty logic.
+    # Note that Proxy does not follow the standard observe-decide-act loop, so execute and tick are empty logic.
     # ============================================
     def reset(self, *, seed: Optional[int] = None, **kwargs) -> None:
         """Reset proxy agent state.
@@ -175,10 +175,10 @@ class ProxyAgent(Agent):
             seed: Random seed
             **kwargs: Additional reset parameters
         """
-        # ProxyAgent doesn't need parent reset - it manages its own state cache
+        # Proxy doesn't need parent reset - it manages its own state cache
         self.state_cache = {}
 
-    def execute(self, actions: Dict[AgentID, Any], proxy: Optional["ProxyAgent"] = None) -> None:
+    def execute(self, actions: Dict[AgentID, Any], proxy: Optional["Proxy"] = None) -> None:
         pass
 
     def tick(
@@ -195,7 +195,7 @@ class ProxyAgent(Agent):
     def message_delivery_handler(self, event: Event, scheduler: EventScheduler) -> None:
         recipient_id = event.agent_id
         if recipient_id != self.agent_id:
-            raise ValueError(f"Event {event} sent to {event.agent_id} is handled in proxy_agent!")
+            raise ValueError(f"Event {event} sent to {event.agent_id} is handled in proxy!")
         sender_id = event.payload.get("sender")
         message_content = event.payload.get("message", {})
 
@@ -230,7 +230,7 @@ class ProxyAgent(Agent):
                         MSG_KEY_BODY: info_data
                     }
                 },
-                delay=self._tick_config.msg_delay,
+                delay=self._schedule_config.msg_delay,
             )
         elif MSG_SET_STATE in message_content:
             from heron.core.state import State
@@ -258,7 +258,7 @@ class ProxyAgent(Agent):
                 sender_id=recipient_id, # same as self.agent_id
                 recipient_id=sender_id,
                 message={MSG_SET_STATE_COMPLETION: "success"},
-                delay=self._tick_config.msg_delay,
+                delay=self._schedule_config.msg_delay,
             )
         elif MSG_SET_TICK_RESULT in message_content:
             result_type = message_content[MSG_SET_TICK_RESULT]
@@ -266,7 +266,7 @@ class ProxyAgent(Agent):
             # Store tick result per-agent for retrieval by parent agents
             self._tick_results[sender_id] = tick_result
         else:
-            raise NotImplementedError(f"Unknown message content {message_content} in message_delivery to proxy_agent")
+            raise NotImplementedError(f"Unknown message content {message_content} in message_delivery to proxy")
 
     def _handle_get_info_request(self, sender_id: AgentID, request_type: str, protocol: Optional[Protocol] = None):
         if request_type == INFO_TYPE_OBS:
@@ -514,4 +514,4 @@ class ProxyAgent(Agent):
     def __repr__(self) -> str:
         num_registered = len(self.registered_agents)
         has_broker = self._message_broker is not None
-        return f"ProxyAgent(id={self.agent_id}, registered_agents={num_registered}, broker={has_broker})"
+        return f"Proxy(id={self.agent_id}, registered_agents={num_registered}, broker={has_broker})"

@@ -4,7 +4,7 @@ import numpy as np
 from dataclasses import dataclass
 from typing import ClassVar, Sequence
 
-from heron.core.feature import FeatureProvider
+from heron.core.feature import Feature
 from case_studies.power.ev_public_charging_case.utils import safe_div, norm01
 
 PRICE_LO = 0.0
@@ -12,7 +12,7 @@ PRICE_HI = 0.8
 
 
 @dataclass(slots=True)
-class ChargingStationFeature(FeatureProvider):
+class ChargingStationFeature(Feature):
     visibility: ClassVar[Sequence[str]] = ['owner', 'upper_level', 'system']
     open_chargers: int = 5
     max_chargers: int = 5
