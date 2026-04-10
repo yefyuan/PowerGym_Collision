@@ -1,0 +1,13 @@
+# Sphinx documentation dependencies
+sphinx>=7.0.0
+pydata-sphinx-theme>=0.15.0
+myst-parser>=2.0.0
+sphinxcontrib-mermaid>=0.9.0
+sphinx-autodoc-typehints>=1.24.0
+sphinx-design>=0.5.0
+sphinx-copybutton>=0.5.0
+
+# Package dependencies for autodoc
+gymnasium>=1.0.0
+numpy>=1.21.0,<2.0
+pandas>=1.3.0

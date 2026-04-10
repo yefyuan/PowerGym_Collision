@@ -1,0 +1,23 @@
+/* Hide "Section Navigation" title in left sidebar */
+.bd-sidebar .sidebar-primary-items__start > p.sidebar-caption,
+.bd-sidebar .sidebar-primary-items__start > .caption-text,
+.bd-sidebar p.caption,
+.bd-sidebar .caption-text,
+#site-navigation > p,
+p.bd-links__title {
+    display: none !important;
+}
+
+/* Hide section navigation caption everywhere */
+nav.bd-docs-nav p.caption,
+.sidebar-primary-items > p.caption,
+.bd-links__title[role="heading"] {
+    display: none !important;
+}
+
+/* Bold all left sidebar navigation text */
+#main-sidebar a,
+.bd-docs-nav a,
+.bd-sidebar a {
+    font-weight: 600 !important;
+}

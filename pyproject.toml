@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "heron-marl"
+version = "0.1.0"
+description = "HERON: Hierarchical Environments for Realistic Observability in Networks - A domain-agnostic MARL framework with power systems case study."
+readme = "README.md"
+authors = [
+    {name = "Hepeng Li", email = "hepeng.li@maine.edu"},
+    {name = "Zhenlin Wang", email = "zhenlin.wang.criss@gmail.com"}
+]
+license = {text = "MIT"}
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "gymnasium>=1.0.0",
+    "numpy>=1.21.0",
+    "pandas>=1.3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "black>=22.0.0",
+    "mypy>=1.0.0",
+]
+powergrid = [
+    "pandapower>=2.14.0",
+    "pyscipopt>=4.0.0",
+    "matplotlib>=3.5.0",
+    "lxml>=4.9.0",
+]
+multi_agent = [
+    "pettingzoo>=1.24.0",
+    "ray[rllib]>=2.40.0",
+    "torch>=2.0.0",
+]
+logging = [
+    "wandb>=0.15.0",
+    "tensorboard>=2.13.0",
+]
+all = [
+    "heron-marl[powergrid,multi_agent,logging,dev]",
+]
+
+[project.urls]
+Homepage = "https://github.com/Criss-Wang/PowerGym"
+Source = "https://github.com/Criss-Wang/PowerGym"
+Issues = "https://github.com/Criss-Wang/PowerGym/issues"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = [".", "case_studies/power"]
+include = ["heron*", "powergrid*"]
+exclude = ["tests*", "docs*", "build*", "dist*", "*.egg-info"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "case_studies/power/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "--import-mode=importlib"

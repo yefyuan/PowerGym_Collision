@@ -1,0 +1,95 @@
+# name: CI
+
+# on:
+#   push:
+#     branches: [main, full_refactor]
+#   pull_request:
+#     branches: [main]
+
+# jobs:
+#   lint:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+
+#       - uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.11'
+
+#       - name: Install linting dependencies
+#         run: |
+#           pip install ruff black
+
+#       - name: Run ruff
+#         run: ruff check .
+
+#       - name: Check formatting with black
+#         run: black --check .
+
+#   typecheck:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+
+#       - uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.11'
+
+#       - name: Install dependencies
+#         run: |
+#           pip install -e ".[dev]"
+#           pip install mypy
+
+#       - name: Run mypy on heron
+#         run: mypy heron --ignore-missing-imports
+
+#   test:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       matrix:
+#         python-version: ['3.10', '3.11', '3.12']
+#     steps:
+#       - uses: actions/checkout@v4
+
+#       - uses: actions/setup-python@v5
+#         with:
+#           python-version: ${{ matrix.python-version }}
+
+#       - name: Install dependencies
+#         run: |
+#           pip install -e ".[dev,powergrid,multi_agent]"
+
+#       - name: Run heron core tests
+#         run: pytest tests/ -v --tb=short
+
+#       - name: Run powergrid tests
+#         run: pytest case_studies/power/tests/ -v --tb=short --ignore=case_studies/power/tests/integration/
+
+#   test-coverage:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+
+#       - uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.11'
+
+#       - name: Install dependencies
+#         run: |
+#           pip install -e ".[dev,powergrid,multi_agent]"
+
+#       - name: Run tests with coverage
+#         run: |
+#           pytest tests/ case_studies/power/tests/ \
+#             --cov=heron \
+#             --cov=case_studies/power/powergrid \
+#             --cov-report=xml \
+#             --cov-report=term-missing \
+#             --ignore=case_studies/power/tests/integration/ \
+#             -v
+
+#       - name: Upload coverage to Codecov
+#         uses: codecov/codecov-action@v4
+#         with:
+#           files: ./coverage.xml
+#           fail_ci_if_error: false
